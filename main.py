@@ -27,19 +27,24 @@ def server_loop(index):
 
         connector.main_loop(index)
 
-        for plugin in loaded_plugins:
-            for plugin_function in plugin.register_plugin():
-                for message in connector.receive_all_messages(index):
-                    data = plugin_function(parse_message(message), connector, index, loaded_plugins, "}:")
+        for message in connector.receive_all_messages(index):
+            for plugin in loaded_plugins:
+                for plugin_function in plugin.register_plugin():
 
-                    try:
-                        for x in data["addplugins"]:
-                            loaded_plugins.append(x)
+                        data = plugin_function(parse_message(message), connector, index, loaded_plugins, "}:", connector.connections[index][3])
 
-                    except (KeyError, TypeError):
-                        pass
+                        try:
+                            for x in data["addplugins"]:
+                                print "Loading plugin {}...".format(x)
+                                loaded_plugins.remove(x)
+                                loaded_plugins.append(x)
 
-        connector.relay_out_queue(index)
+                            print "Plugins loaded succesfully!"
+
+                        except (KeyError, TypeError):
+                            pass
+
+                        connector.relay_out_queue(index)
 
 
 def parse_message(raw_message):
