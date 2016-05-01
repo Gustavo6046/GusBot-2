@@ -8,7 +8,7 @@ def connection(configuration_ini, connector=IRCConnector()):
         configuration.read(ini)
 
     try:
-        for i in xrange(configuration.getint("General", "NumServers")):
+        for i in xrange(configuration.getint("General", "NumServers") - 1):
             try:
                 server = configuration.get("Server{}".format(i), "URL")
                 print "Got server URL!"

@@ -354,9 +354,8 @@ class IRCConnector(object):
                 log(self.logfile, u"No OQ messages sent!")
             else:
                 log(self.logfile, u"Sent all OQ messages!")
+                sleep(0.5)
             pass
-
-        sleep(0.5)
 
     def send_command(self, connection_index=0, command=""):
         """Sends a command to the IRC server.

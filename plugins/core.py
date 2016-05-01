@@ -7,8 +7,8 @@ def bot_command(command_name, admin_command=False):
             print message
             print command_prefix + command_name
             try:
-                if message["body"].startswith(command_prefix + command_name) and (
-                    admin_command and message["nick"] == master
+                if message["arguments"][0] == command_prefix + command_name and (
+                    not admin_command or message["nick"] == master
                 ):
                     func(message, connector, index, plugin_list, False)
 
@@ -68,4 +68,4 @@ def reload_plugins(message, connector, index, plugin_list, raw):
 
 
 def register_plugin():
-    return [add_plugin, list_plugins, reload_plugins]
+    return [add_plugin, list_plugins, reload_plugins, evaluate_expression]

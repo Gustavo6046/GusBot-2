@@ -15,5 +15,14 @@ def sine_command(message, connector, index, plugin_list, raw):
         except IndexError:
             connector.send_message(index, message["channel"], message["nick"] + ": No argument given!")
 
+@bot_command("cosine")
+def cosine_command(message, connector, index, plugin_list, raw):
+    if not raw:
+        try:
+            connector.send_message(index, message["channel"], str(math.cos(message["arguments"][1])))
+
+        except IndexError:
+            connector.send_message(index, message["channel"], message["nick"] + ": No argument given!")
+
 def register_plugin():
-    return [get_pi]
+    return [get_pi, sine_command]
