@@ -7,7 +7,7 @@ loaded_plugins = [plugins.core]
 print "Loading INI {} for server configuration...".format(argv[1])
 
 try:
-    connector = connection([argv[1] + ".ini"])
+    connector = connection(["config/" + argv[1] + ".ini"])
 except IndexError:
     print "No argument given!"
     status_exit(3)
