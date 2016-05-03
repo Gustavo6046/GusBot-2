@@ -1,7 +1,7 @@
 from Queue import Empty
 from socket import SOCK_STREAM, socket, AF_INET, error
 from threading import Thread
-from time import sleep, strftime
+from time import sleep, strftime, time
 from io import open
 from iterqueue import IterableQueue
 import ssl
@@ -177,6 +177,8 @@ class IRCConnector(object):
 
         log(self.logfile, u"Connected socket!")
 
+        start_time = time()
+
         if not has_account:
             sock.sendall("NICK {0:s}\r\n".format(account_name))
             sock.sendall("USER {0:s} * * :{1:s}\r\n".format(ident, real_name))
@@ -244,6 +246,10 @@ class IRCConnector(object):
         else:
             log(self.logfile, u"Channel defaulting check done!")
 
+        executed_time = time() - start_time
+
+        sleep(10 - executed_time if executed_time < 10 else 2)
+
         for x in channels:
             sock.sendall("JOIN %s\r\n" % x.encode('utf-8'))
 
@@ -292,7 +298,6 @@ class IRCConnector(object):
 
                 try:
                     w = x[0].recv(4096).decode('utf-8')
-                    log(self.logfile, u"Got message!")
                 except error:
                     if len(self.connections[index][2]) > 0:
                         return

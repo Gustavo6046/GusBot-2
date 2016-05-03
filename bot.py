@@ -1,14 +1,16 @@
 from guspirc import IRCConnector
 from ConfigParser import *
+from threading import Thread
 
 def connection(configuration_ini, connector=IRCConnector()):
     configuration = ConfigParser()
+    threads = []
 
     for ini in configuration_ini:
         configuration.read(ini)
 
     try:
-        for i in xrange(configuration.getint("General", "NumServers") - 1):
+        for i in xrange(configuration.getint("General", "NumServers")):
             try:
                 server = configuration.get("Server{}".format(i), "URL")
                 print "Got server URL!"
@@ -34,20 +36,35 @@ def connection(configuration_ini, connector=IRCConnector()):
 
             print "Connecting!"
 
-            connector.add_connection_socket(
-                server=server,
-                port=port,
-                nickname=nick,
-                password=password,
-                email=email,
-                account_name=account_name,
-                has_account=has_account,
-                channels=channels,
-                auth_numeric=authentication_number,
-                master=master
-            )
+            try:
+                threads.append(Thread(name="Server {} Thread".format(server), target=connector.add_connection_socket, kwargs={
+                    "server": server,
+                    "port": port,
+                    "nickname": nick,
+                    "password": password,
+                    "email": email,
+                    "account_name": account_name,
+                    "has_account": has_account,
+                    "channels": channels,
+                    "auth_numeric": authentication_number,
+                    "master": master
+                }))
+            except UnboundLocalError:
+                print "Missing server section or option in the INI file!"
+                continue
 
-            return connector
+        for x in threads:
+            x.daemon = True
+            x.start()
+
+        for x in threads:
+            x.join()
+
+        try:
+            return [connector, configuration.get("General", "CommandPrefix")]
+
+        except (NoSectionError, NoOptionError):
+            return [connector, ""]
 
     except NoSectionError:
         return None
