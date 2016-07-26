@@ -48,3 +48,6 @@ This is an simple example: (it'll probably suffice for now)
     def my_commands_name(message, raw):
         if not raw:
             return ["Hello World!", "Second message.", "Third message! You said: " + " ".join(message["arguments"][1:])]
+            
+        else:
+            return []
