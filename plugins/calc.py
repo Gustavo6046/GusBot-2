@@ -1,34 +1,51 @@
 from random import choice
 import math
-from main import bot_command, easy_bot_command
-
+from plugincon import bot_command, easy_bot_command
 
 @bot_command("pi")
 def get_pi(message, connector, index, raw):
     if not raw:
         connector.send_message(index, message["channel"], str(math.pi))
+    else:
+        return []
 
 
-@bot_command("sine")
-def sine_command(message, connector, index, raw):
+@easy_bot_command("sine")
+def sine_command(message, raw):
     if not raw:
         try:
-            connector.send_message(index, message["channel"], str(math.sin(message["arguments"][1])))
+            print "Sending decimal sine..."
+			
+            try:
+                return ["{}: {}".format(message["nick"], str(math.sin(Decimal(message["arguments"][1]))))]
+				
+            except InvalidOperation:
+                return [index, message["channel"], message["nick"] + ": Invalid literal!"]
 
         except IndexError:
-            connector.send_message(index, message["channel"], message["nick"] + ": No argument given!")
+            return [message["nick"] + ": No argument given!"]
+
+    else:
+        return []
 
 
-@bot_command("cosine")
-def cosine_command(message, connector, index, raw):
+@easy_bot_command("cosine")
+def cosine_command(message, raw):
     if not raw:
         try:
-            connector.send_message(index, message["channel"], str(math.cos(message["arguments"][1])))
+            print "Sending decimal cosine..."
+            try:
+                return [str(Decimal(math.cos(message["arguments"][1])))]
+            except InvalidOperation:
+                return [index, message["channel"], message["nick"] + ": Invalid literal!"]
 
         except IndexError:
-            connector.send_message(index, message["channel"], message["nick"] + ": No argument given!")
+            return [message["nick"] + ": No argument given!"]
 
-@easy_bot_command()
+    else:
+        return []
+
+@easy_bot_command("hue")
 def hue(message, raw):
     if not raw:
         return ["HUE!", "Go fuck yourself {}!".format(choice(["momma", "daddy"]))]
