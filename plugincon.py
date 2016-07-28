@@ -1,3 +1,9 @@
+import glob
+import importlib
+import os
+import ntpath
+import json
+
 commands = []
 command_names = []
 
@@ -9,6 +15,25 @@ def get_bot_nickname(connector, index):
 		print "Name missing!"
 
 	return connector.connections[index][4]
+	
+def fetch_name(filepath):
+    return os.path.splitext(ntpath.basename(filepath))[0]
+	
+def reload_all_plugins():
+	print "Reloading plugins..."
+	commands = []
+	command_names = []
+
+	plugin_list = [fetch_name(module) for module in glob.glob("plugins/*.py") if os.path.isfile(module)]
+
+	json.dump(plugin_list, open("pluginlist.json", "w"))
+	
+	for plugin in plugin_list:
+		importlib.import_module("plugins." + plugin)
+		
+	print "Plugins reloaded!"
+		
+	return plugin_list
 
 def easy_bot_command(command_name=None, admin_command=False, all_messages=False, dont_parse_if_prefix=False):
 	def real_decorator(func):
@@ -42,6 +67,14 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 						result = func(message, False)
 						
 					else:
+						if (
+							not (not admin_command or message["nickname"] == master)
+							and (not dont_parse_if_prefix or not message["message"].startswith(command_prefix))
+							and (not message["nickname"] == message["channel"] == get_bot_nickname(connector, index))
+							and (not dont_parse_if_prefix and message["arguments"][0].lower() == (command_prefix + command_name_to_use).lower())
+						):
+							connector.send_message(index, get_message_target(connector, message, index), "{}: Permission Denied!".format(message["nickname"]))
+					
 						print "Command couldn't run:"
 						print "Admin certified:", not admin_command or message["nickname"] == master
 						print "Don't-parse-if-prefix certified:", not dont_parse_if_prefix or not message["message"].startswith(command_prefix)
@@ -116,6 +149,14 @@ def bot_command(command_name=None, admin_command=False, all_messages=False, dont
 						func(message, connector, index, False)
 						
 					else:
+						if (
+							not (not admin_command or message["nickname"] == master)
+							and (not dont_parse_if_prefix or not message["message"].startswith(command_prefix))
+							and (not message["nickname"] == message["channel"] == get_bot_nickname(connector, index))
+							and (not dont_parse_if_prefix and message["arguments"][0].lower() == (command_prefix + command_name_to_use).lower())
+						):
+							connector.send_message(index, get_message_target(connector, message, index), "{}: Permission Denied!".format(message["nickname"]))
+							
 						print "Command couldn't run:"
 						print "Admin certified:", not admin_command or message["nickname"] == master
 						print "Don't-parse-if-prefix certified:", not dont_parse_if_prefix or not message["message"].startswith(command_prefix)

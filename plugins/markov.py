@@ -277,4 +277,4 @@ def get_markov_size(message, raw):
 	global markov_dict
 
 	if not raw:
-		return ["Size of Markov chain: " + len(markov_dict.keys())]
+		return ["Size of Markov chain: {}".format(len(markov_dict.keys()))]

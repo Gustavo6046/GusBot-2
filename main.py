@@ -33,17 +33,17 @@ if connector is None:
 	status_exit(2)
 
 server_connections = len(connector.connections)
-
-commands = plugincon.get_commands()
 	
 def server_loop(index):
-	global connector, loaded_plugins
+	global connector
 
 	while True:
 		connector.main_loop(index)
 
 		for message in connector.receive_all_messages(index):
-			for plugin_function in commands:
+			message = message.encode("utf-8")
+		
+			for plugin_function in plugincon.get_commands():
 				try:
 					plugin_function(parse_message(message), connector, index, command_prefix,
 												  connector.connections[index][3])
@@ -51,12 +51,8 @@ def server_loop(index):
 				except BaseException as plugin_error:
 					print "Error parsing command! ({}: {})".format(plugin_error.__class__.__name__, plugin_error)
 					
-					if parse_message(message)["type"] == "privmsg":
-						if message.startswith("#"):
-							connector.send_message(index, parse_message(message)["channel"], "Error parsing command! ({}: {})".format(plugin_error.__class__.__name__, plugin_error))
-							
-						else:
-							connector.send_message(index, parse_message(message)["nickname"], "Error parsing command! ({}: {})".format(plugin_error.__class__.__name__, plugin_error))
+					if parse_message(message)["type"] == "PRIVMSG":
+						connector.send_message(index, parse_message(message)["channel"], "Error parsing command! ({}: {})".format(plugin_error.__class__.__name__, plugin_error))
 
 		connector.relay_out_queue(index)
 
