@@ -41,3 +41,10 @@ def website_title(message, raw):
 		return ["No webpage title!"]
 		
 	return ["Webpage's Title | {}".format(soup.title.string.encode("utf-8").replace("\n", ""))]
+	
+@bot_command("kick")
+def kick_user(message, raw):
+	if raw:
+		return
+		
+	connector.send_command(index, "KICK {} {} :{}".format(message["channel"], message["arguments"][1], " ".join(message["arguments"][2:])))

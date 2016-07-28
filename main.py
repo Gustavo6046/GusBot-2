@@ -10,8 +10,7 @@ from time import sleep
 from threading import Thread
 from functools import wraps
 
-for plugin in json.load(open("pluginlist.json")):
-	import_module("plugins." + plugin)
+plugincon.reload_all_plugins()
 
 print "Loading INI {} for server configuration...".format(argv[1])
 

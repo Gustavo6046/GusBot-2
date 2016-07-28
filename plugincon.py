@@ -2,10 +2,14 @@ import glob
 import importlib
 import os
 import ntpath
+import fnmatch
 import json
 
 commands = []
-command_names = []
+command_names = {}
+plugins = {}
+exempt_list = []
+current_plugin = ""
 
 def get_message_target(connector, message, index):
 	return (message["channel"] if message["channel"] != get_bot_nickname(connector, index) else message["nickname"])
@@ -29,11 +33,15 @@ def reload_all_plugins():
 	json.dump(plugin_list, open("pluginlist.json", "w"))
 	
 	for plugin in plugin_list:
-		importlib.import_module("plugins." + plugin)
+		current_plugin = plugin
+		plugins[plugin] = importlib.import_module("plugins." + plugin)
 		
 	print "Plugins reloaded!"
 		
 	return plugin_list
+	
+def raise_exception(exception_name):
+	raise exception_name
 
 def easy_bot_command(command_name=None, admin_command=False, all_messages=False, dont_parse_if_prefix=False):
 	def real_decorator(func):
@@ -41,9 +49,13 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 		global command_names
 
 		def wrapper(message, connector, index, command_prefix, master):
+			print message["raw"]
+			print command_prefix + command_name
+		
+			if True in [fnmatch(message["hostname"], hostmask) for hostmask in exempt_list]:
+				connector.send_message(index, get_message_target(connector, message, index), "You are exempted from using commands!")
+		
 			if not all_messages:
-				print message["raw"]
-				print command_prefix + command_name
 
 				if command_name == None:
 					command_name_to_use = func.__name__
@@ -102,14 +114,34 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 					
 			else:
 				try:
-					if not admin_command or message["nick"] == master:
-						func(message, False)
+					if (
+						not admin_command or message["nick"] == master
+					) and (
+						not dont_parse_if_prefix or not message["message"].startswith(command_prefix)
+					):
+						result = func(message, False)
 					
 				except KeyError:
-					func(message, True)
-
+					result = func(message, True)
+					
+				if not result:
+					return
+					
+				if isinstance(result, str):
+					connector.send_message(index, get_message_target(connector, message, index), result)
+				
+				else:
+					for output_message in result:
+						connector.send_message(index, get_message_target(connector, message, index), output_message)
+					
 		commands.append(wrapper)
-		command_names.append(command_name)
+		
+		if not dont_parse_if_prefix and not all_messages:
+			try:
+				command_names[current_plugin].append(command_name)
+				
+			except KeyError:
+				command_names[current_plugin] = [command_name]
 
 		return wrapper
 
@@ -117,6 +149,8 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 
 
 def bot_command(command_name=None, admin_command=False, all_messages=False, dont_parse_if_prefix=False):
+	global current_plugin
+
 	def real_decorator(func):
 		global commands
 		global command_names
@@ -172,16 +206,24 @@ def bot_command(command_name=None, admin_command=False, all_messages=False, dont
 					
 			else:
 				try:
-					print "..."
-					if not admin_command or message["nick"] == master:
+					if (
+						not admin_command or message["nick"] == master
+					) and (
+						not dont_parse_if_prefix or not message["message"].startswith(command_prefix)
+					):
 						func(message, connector, index, False)
 					
 				except KeyError:
-					print "..."
 					func(message, connector, index, True)
 
 		commands.append(wrapper)
-		command_names.append(command_name)
+		
+		if not dont_parse_if_prefix and not all_messages:
+			try:
+				command_names[current_plugin].append(command_name)
+				
+			except KeyError:
+				command_names[current_plugin] = [command_name]
 
 		return wrapper
 
@@ -192,3 +234,12 @@ def get_commands():
 	
 def get_command_names():
 	return command_names
+	
+def add_exempt(user):
+	exempt_list.append(user)
+	
+def remove_exempt(user):
+	exempt_list.remove(user)
+	
+def get_exempts():
+	return exempt_list

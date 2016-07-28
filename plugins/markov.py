@@ -3,6 +3,8 @@ import BeautifulSoup
 import requests
 import re
 
+parsed_websites = []
+
 def visible(element):
     if element.parent.name in ['style', 'script', '[document]', 'head', 'title']:
         return False
@@ -10,8 +12,33 @@ def visible(element):
         return False
     return True
 
+def isalnumspace(string):
+	for char in string:
+		if not (char.isalnum() or " " == char):
+			return False
+			
+	return True
+
 from plugincon import bot_command, easy_bot_command, get_message_target, get_bot_nickname
 from random import choice, sample
+
+def simple_string_filter(old_string, bad_chars=None, extra_filter=None):
+	result = ""
+	
+	if bad_chars:
+		for char in old_string:
+			if not char in bad_chars:
+				result += char
+			
+	if extra_filter and hasattr(extra_filter, "__call__"):
+		old_result = result
+		result = ""
+	
+		for char in old_result:
+			if extra_filter(char):
+				result += char
+			
+	return result
 
 def string_filter(old_string, filter_, separator=None):
     result_string = []
@@ -39,17 +66,16 @@ markov_dict = {}
 @bot_command("parsemarkov")
 def parse_markov_from_text(message, connector, index, raw):
 	global markov_dict
+	
+	for key, item in markov_dict.items():
+			markov_dict[key] = set(item)
 
 	if not raw:
 		if len(message["arguments"]) < 2:
 			connector.send_message(index, get_message_target(connector, message, index), "{}: Error: No argument provided!".format(message["nickname"]))
 	
 		for line in open(" ".join(message["arguments"][1:])).readlines():
-			words = line.split(" ")
-		
-			for x in xrange(len(words) - 1):
-				words[x] = string_filter(words[x].split(" "),
-										   lambda y: not (not y.isalnum() and string_filter(y, "\'\"-/\\,.!?") == ""))
+			words = simple_string_filter(line, "\'\"-/\\,.!?", isalnumspace).split(" ")
 
 			for x in xrange(len(words)):
 				try:
@@ -83,11 +109,12 @@ def parse_markov_from_text(message, connector, index, raw):
 @bot_command("mkfeeder_on", False, True, True)
 def feed_markov_data(message, connector, index, raw):
 	global markov_dict
+	
+	for key, item in markov_dict.items():
+			markov_dict[key] = set(item)
 
 	if not raw:
-		for x in xrange(len(message["arguments"]) - 1):
-			message["arguments"][x] = string_filter(message["arguments"][x].split(" "),
-									   lambda y: not (not y.isalnum() and string_filter(y, "\'\"-/") == ""))
+		words = simple_string_filter(" ".join(message["arguments"]), "\'\"-/\\,.!?", isalnumspace).split(" ")
 
 		for x in xrange(len(message["arguments"])):
 			try:
@@ -116,56 +143,58 @@ def feed_markov_data(message, connector, index, raw):
 			except IndexError:
 				continue
 				
-@bot_command("markov")
-def get_markov(message, connector, index, raw):
+@easy_bot_command("markov")
+def get_markov(message, raw):
 	global markov_dict
+	
+	for key, item in markov_dict.items():
+			markov_dict[key] = set(item)
 
-	if not raw:
-		try:
-			markov_dict.__delitem__("")
-		except KeyError:
-			pass
+	if raw:
+		return
+		
+	# Checks.
+	try:
+		markov_dict.__delitem__("")
+		
+	except KeyError:
+		pass
 
-		if len(message["arguments"]) < 2:
-			connector.send_message(index, message["channel"], "{0}: What topic?".format(message["nickname"]))
-
-		else:
-			try:
-				x = string_filter(message["arguments"][1].lower(),
-								  lambda x: not (not x.isalnum() and string_filter(x, "\'\"-/\\,.!?") == ""))
-				markov_dict[string_filter(message["arguments"][1].lower(),
-								  lambda x: not (not x.isalnum() and string_filter(x, "\'\"-/\\,.!?") == ""))]
-
-
-			except KeyError:
-				connector.send_message(index, message["channel"],
-									   "{0}: The topic {1} isn't registered in my database.".format(message["nickname"],
-																									message["arguments"][1]))
-
-			else:
-				phrase = string_filter(message["arguments"][1].lower(),
-									   lambda x: not (not x.isalnum() and string_filter(x, "\'\"-/\\,.!?") == ""))
-				i = 0
-
-				while True:
-					debuginfo = u"{0}: {1}".format(x, phrase)
-					i += 1
-
-					try:
-						x = string_filter(sample(markov_dict[x], 1)[0],
-										  lambda x: not (not x.isalnum() and string_filter(x, "\'\"-/\\,.!?") == ""))
-						if x == phrase.split(" ")[-1]:
-							raise RuntimeError
-						if i > 99:
-							raise RuntimeError
-
-					except (KeyError, RuntimeError):
-						connector.send_message(index, message["channel"], u"{0}: {1}".format(message["nickname"], phrase).encode("utf-8"))
-						break
-
-					phrase = u"{0} {1}".format(phrase, x)
-
-					del debuginfo
+	if len(message["arguments"]) < 2:
+		return["{0}: Syntax: markov <words for multi-level Markov>".format(message["nickname"])]
+			
+	# Get the string!
+	words = message["arguments"][1:]
+	x = words[0]
+	level = 0
+	result = "{0}: ".format(message["nickname"]) + x
+	
+	print x
+	
+	while level < len(words) - 1:
+		if not words[level + 1] in markov_dict[x]:
+			return [result]
+			
+		print x
+			
+		x = words[level + 1]
+		level += 1
+		result += " " + x
+		
+	while x in markov_dict.keys():
+		x = sample(markov_dict[x], 1)[0]
+		
+		print x
+		
+		result += " " + x
+		
+		level += 1
+		
+		if level > 70:
+			return [result]
+			
+	return [result]
+	
 					
 @easy_bot_command("savemarkov")
 def save_markov_json(message, raw):
@@ -210,25 +239,71 @@ def load_markov_json(message, raw):
 	else:
 		return []
 		
-@bot_command("parsewebmarkov")
-def parse_web_markov(message, connector, index, raw):
+@easy_bot_command("parsewebmarkov")
+def parse_web_markov(message, raw):
 	global markov_dict
 	
-	if not raw:
-		if len(message["arguments"]) < 2:
-			connector.send_message(index, get_message_target(connector, message, index), "{}: Error: No argument provided!".format(message["nickname"]))
-			return
+	for key, item in markov_dict.items():
+			markov_dict[key] = set(item)
+	
+	if raw:
+		return
+			
+	messages = []
+	warnings = []
+			
+	debug = "--debug" in message["arguments"][1:]
+			
+	if len(message["arguments"]) < 2:
+			return ["{}: Error: No argument provided! (Syntax: parsewebmarkov <list of URLs>)".format(message["nickname"])]
+			
+	for website in filter(lambda x: not x.startswith("--"), message["arguments"][1:]):
+		if website in parsed_websites:
+			warnings.append("Website rejected! (already parsed)")
+			
+		parsed_websites.append(website)
+	
+		print "Parsing Markov from {}!".format(website)
+		messages.append("Parsing Markov from {}!".format(website))
 	
 		try:
-			request = requests.get(" ".join(message["arguments"][1:]))
+			request = requests.get(website, timeout=10)
 			
 		except requests.ConnectionError:
-			connector.send_message(index, get_message_target(connector, message, index), "{}: URL missing or connection errored out!".format(message["nickname"]))
-	
+			warnings.append("Error with connection!")
+			
+			if debug:
+					raise
+			
+		except requests.exceptions.Timeout:
+			warnings.append("Connection timed out!")
+			
+			if debug:
+					raise
+			
+		except requests.exceptions.MissingSchema:
+			try:
+				request = requests.get("http://" + website, timeout=10)
+				
+			except requests.ConnectionError:
+				warnings.append("Error with connection!")
+				
+				if debug:
+					raise
+				
+			except requests.exceptions.Timeout:
+				warnings.append("Connection timed out!")
+				
+				if debug:
+					raise
+
+		if not "request" in locals().keys():
+			continue
+				
 		if request.status_code != 200:
-			connector.send_message(index, get_message_target(connector, message, index), "{}: Error: Status {} reached!".format(message["nickname"], request.status_code))
-			return
-	
+			warnings.append("{}: Error: Status {} reached!".format(message["nickname"], request.status_code))
+			continue
+		
 		visible_texts = [text.encode("utf-8") for text in filter(visible, BeautifulSoup.BeautifulSoup(request.text).findAll(text=True))]
 	
 		lines = []
@@ -237,11 +312,7 @@ def parse_web_markov(message, connector, index, raw):
 			lines += text.split("\n")
 	
 		for line in lines:
-			words = line.split(" ")
-		
-			for x in xrange(len(words) - 1):
-				words[x] = string_filter(words[x].split(" "),
-										   lambda y: not (not y.isalnum() and string_filter(y, "\'\"-/\\,.!?") == ""))
+			words = simple_string_filter(line, "\'\"-/\\,.!?", isalnumspace).split(" ")
 
 			for x in xrange(len(words)):
 				try:
@@ -269,8 +340,11 @@ def parse_web_markov(message, connector, index, raw):
 						pass
 				except IndexError:
 					continue
-		
-		connector.send_message(index, get_message_target(connector, message, index), "{}: Success reading Markov from website!".format(message["nickname"]))
+			
+	if len(warnings) < len(message["arguments"][1:]):
+		messages.append("{}: Success reading Markov from (some) website(s)!".format(message["nickname"]))
+			
+	return messages + warnings
 		
 @easy_bot_command("markovsize")
 def get_markov_size(message, raw):

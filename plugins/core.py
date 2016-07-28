@@ -23,7 +23,7 @@ def hello_there(message, raw):
 @easy_bot_command("commands")
 def help_list(message, raw):
 	if not raw:
-		return ["Commands: " + " ".join([command for command in plugincon.get_command_names() if command != None])]
+		return ["Commands: " + " ".join([command.decode("utf-8") for command in plugincon.get_command_names() if command != None])]
 		
 	else:
 		return []
@@ -69,3 +69,34 @@ def reload_plugins(message, raw):
 def shut_up_lol(message, raw):
 	if not raw:
 		return ["Sorry, I didn't want to do this horrible thing. :'(", "Maybe you could filter cussings from Markov input? I'd love! I'm tired of these!"]
+		
+@bot_command("groupnick", True)
+def group_nickname(message, connector, index, raw):
+	if raw:
+		return
+		
+	connector.send_message(index, "NickServ", "GROUP")
+	
+@easy_bot_command("addexempt")
+def add_exempt(message, raw):
+	if len(message["arguments"]) < 2:
+		return ["Syntax: addexempt <list of hostmasks>"]
+
+	for hostmask in message["arguments"][1:]:
+		plugincon.add_exempt(hostmask)
+		
+	return ["Hostmasks added succesfully: " + " ".join(message["arguments"][1:])]
+	
+@easy_bot_command("removeexempt")
+def add_exempt(message, raw):
+	if len(message["arguments"]) < 2:
+		return ["Syntax: removeexempt <list of hostmasks>"]
+
+	for hostmask in message["arguments"][1:]:
+		plugincon.remove_exempt(hostmask)
+		
+	return ["Hostmasks removed succesfully: " + " ".join(message["arguments"][1:])]
+	
+@easy_bot_command("listexempts")
+def list_exempts(message, raw):
+	return ["Exempt list: " + " ".join(plugincon.get_exempts())]

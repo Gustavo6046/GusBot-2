@@ -41,13 +41,6 @@ def hacking_list(message, raw):
 		hack_subjects.__delitem__("NullItemOk?")
 	
 		return ["Hack subjects available: " + "; ".join(filter(lambda x: x != None, hack_subjects.keys()))]
-
-@easy_bot_command("imsad")
-def im_sad(message, raw):
-	if raw:
-		return
-		
-	return ["\x01ACTION hugs {}\x01".format(message["nickname"])]
 	
 @easy_bot_command(u"jeparlefran\u00e7ais".encode("utf-8"))
 def french_sad(message, raw):
@@ -66,3 +59,28 @@ def french_learning(message, raw):
 		return
 		
 	return ["\x01ACTION hugs {}\x01".format(message["nickname"]), "Seriously?! Well, use ||teachfrench <word in English> <word in French>. It won't use conjugation, but it's the best I can do. :)"]
+	
+@easy_bot_command(u"feeling")
+def feeling_replies(message, raw):
+	if raw:
+		return
+		
+	if len(message["arguments"]) < 2:
+		return ["What are you feeling?"]
+		
+	mood = message["arguments"][1]
+	
+	if mood.lower() in ("sad", "bad"):
+		return ["\x01ACTION hugs {}\x01".format(message["nickname"]), "It'll get better. I'm sure."]
+	
+	if mood.lower() in ("mad", "stressed", "tired", "angry"):
+		return ["\x01ACTION plays a calm song.\x01", "Why are you mad {}? I know I won't be able to parse that, but...".format(message["nickname"]), "\x01ACTION frowns and sits down\x01"]
+		
+	if mood.lower() in ("evil", "evilish"):
+		return ["Please, don't...", "\x01ACTION frowns and sits down hiding in the corner\x01"]
+		
+	if mood.lower() in ("happy", "good"):
+		return ["\x01ACTION nods\x01", "Good you are good. :P"]
+	
+	if "pain" in mood.lower():
+		return ["Hm, I don't know how to lead with pain...", "\x01ACTION frowns and sits down\x01"]
