@@ -101,30 +101,30 @@ class IRCConnector(object):
 		Only call this ONCE PER SERVER! For multiple channels give a
 		tuple with all the channel names as string for the argument channels!
 
-		Th== function only works for NICKSERV-CONTAINING SERVERS!
+		This function only works for NICKSERV-CONTAINING SERVERS!
 
-		- server == the server address to connect to.
+		- server is the server address to connect to.
 		Example: irc.freenode.com
 
-		- port == the port of the server address.
+		- port is the port of the server address.
 		Example and default value: 6667
 
-		- ident == the ident the bot's hostname will use! It's usually limited
+		- ident is the ident the bot's hostname will use! It's usually limited
 		to 10 characters.
 
 		Example: ident_here
 		Result: connector.connections[index][4]!~ident_here@ip_here
 		Default value: "GusPIRC"
 
-		- real_name == the bot's real name d==played in most IRC clients.
+		- real_name is the bot's real name d==played in most IRC clients.
 
 		Example: GusBot(tm) the property of Gustavo6046
 
-		- nickname == the nick of the bot (self-explanatory)
+		- nickname is the nick of the bot (self-explanatory)
 
 		Example: YourBotsName
 
-		- password == the password of the bot.
+		- password is the password of the bot.
 
 		Example: password123bot
 
@@ -132,12 +132,12 @@ class IRCConnector(object):
 		trustable personnel! Only load it from a external file (like password.txt)
 		and DON'T SHARE THE PASSWORD, IN SOURCE CODE, OR IN FILE!!!
 
-		- email == the email the server should send the reg==tration email to
-		if has_account == set to False (see below!)
+		- email: the email the server should send the registration email to
+		if has_account is set to False (see below!)
 
 		Example and default value: email@address.com
 
-		- account_name == the name of the NickServ account the bot will
+		- account_name: is the name of the NickServ account the bot will
 		use.
 
 		Default value: ""
@@ -145,7 +145,7 @@ class IRCConnector(object):
 		Example: botaccount
 		Default value: ""
 
-		- has_account: == a bool that determines if the bot already has a reg==tered
+		- has_account: is a bool that determines if the bot already has a reg==tered
 		account.
 
 		- channels: iterable object containing strings for the names of all the
@@ -235,7 +235,7 @@ class IRCConnector(object):
 		log(self.logfile, u"NickServ Notice found!")
 
 		if not has_account:
-			sock.sendall(u"PRIVMSG NickServ :REG==TER {0:s} {1:s}\r\n".format(password, email))
+			sock.sendall(u"PRIVMSG NickServ :REGISTER {0:s} {1:s}\r\n".format(password, email))
 			sock.sendall(u"PRIVMSG Q :HELLO {0:s} {1:s}\r\n".format(email, email))
 			log(self.logfile, u"Made account!")
 
@@ -354,9 +354,11 @@ class IRCConnector(object):
 
 		try:
 			v = self.connections[index][2].get(False).decode('utf-8')
+			
 			if v == u"":
 				log(self.logfile, u"Error: Blank string in OQ!")
 				return
+				
 			worked = True
 			log(self.logfile, v)
 			self.connections[index][0].sendall(v.encode('utf-8'))
@@ -364,9 +366,11 @@ class IRCConnector(object):
 		except Empty:
 			if not worked:
 				log(self.logfile, u"No OQ messages sent!")
+				
 			else:
 				log(self.logfile, u"Sent all OQ messages!")
 				sleep(0.5)
+				
 			pass
 
 	def send_command(self, connection_index=0, command=""):

@@ -26,7 +26,7 @@ def fetch_name(filepath):
 def reload_all_plugins():
 	print "Reloading plugins..."
 	commands = []
-	command_names = []
+	command_names = {}
 
 	plugin_list = [fetch_name(module) for module in glob.glob("plugins/*.py") if os.path.isfile(module)]
 
@@ -34,29 +34,32 @@ def reload_all_plugins():
 	
 	for plugin in plugin_list:
 		current_plugin = plugin
+		print current_plugin
 		plugins[plugin] = importlib.import_module("plugins." + plugin)
 		
-	print "Plugins reloaded!"
+	print "Plugins reloaded! ({})".format(command_names)
 		
 	return plugin_list
-	
-def raise_exception(exception_name):
-	raise exception_name
 
 def easy_bot_command(command_name=None, admin_command=False, all_messages=False, dont_parse_if_prefix=False):
 	def real_decorator(func):
 		global commands
 		global command_names
+		
+		current_plugin = get_current_plugin()
+		
+		print current_plugin
 
 		def wrapper(message, connector, index, command_prefix, master):
 			print message["raw"]
 			print command_prefix + command_name
 		
-			if True in [fnmatch(message["hostname"], hostmask) for hostmask in exempt_list]:
-				connector.send_message(index, get_message_target(connector, message, index), "You are exempted from using commands!")
+			for hostmask in exempt_list:
+				if fnmatch.fnmatch(message["hostname"], hostmask):
+					connector.send_message(index, get_message_target(connector, message, index), "You are exempted from using commands!")
+					return
 		
 			if not all_messages:
-
 				if command_name == None:
 					command_name_to_use = func.__name__
 
@@ -212,6 +215,13 @@ def bot_command(command_name=None, admin_command=False, all_messages=False, dont
 						not dont_parse_if_prefix or not message["message"].startswith(command_prefix)
 					):
 						func(message, connector, index, False)
+						
+					else:		
+						print "Command couldn't run:"
+						print "Admin certified:", not admin_command or message["nickname"] == master
+						print "Don't-parse-if-prefix certified:", not dont_parse_if_prefix or not message["message"].startswith(command_prefix)
+						print "Not self-sending-message certified:", not message["nickname"] == message["channel"] == get_bot_nickname(connector, index)
+						
 					
 				except KeyError:
 					func(message, connector, index, True)
@@ -243,3 +253,6 @@ def remove_exempt(user):
 	
 def get_exempts():
 	return exempt_list
+	
+def get_current_plugin():
+	return current_plugin

@@ -84,3 +84,15 @@ def feeling_replies(message, raw):
 	
 	if "pain" in mood.lower():
 		return ["Hm, I don't know how to lead with pain...", "\x01ACTION frowns and sits down\x01"]
+		
+@easy_bot_command("shutup")
+def shut_up_lol(message, raw):
+	if not raw:
+		return ["Sorry, I didn't want to do this horrible thing. :'(", "I have little control over what I say!", "\x01ACTION sits down, frowning\x01"]
+		
+@easy_bot_command("spike")
+def spike_with_spike(message, raw):
+	if raw:
+		return
+
+	return ["Ouch! Where did you get that {} from?".format(choice(["stalagmite", "stalagtite", "triangle", "claw", "knife", "horn", "table corner", "snake tooth", "lion tooth", "vampire tooth", "coal stone"]))]

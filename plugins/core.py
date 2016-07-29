@@ -23,7 +23,29 @@ def hello_there(message, raw):
 @easy_bot_command("commands")
 def help_list(message, raw):
 	if not raw:
-		return ["Commands: " + " ".join([command.decode("utf-8") for command in plugincon.get_command_names() if command != None])]
+		split_num = 0
+		
+		iter_num = 0
+		command_list = []
+		old_command_list = []
+		current_commands = []
+		
+		for plugin, list in plugincon.get_command_names().items():
+			for command in list:
+				old_command_list.append(command.decode("utf-8"))
+				
+		for command in old_command_list:
+			iter_num += 1
+			current_commands.append(command)
+			
+			if iter_num % 30 == 0:
+				command_list.append(current_commands)
+				current_commands = []
+		
+		if current_commands[-1] != command_list[-1][-1]:
+			command_list.append(current_commands)
+		
+		return ["Command list below:"] + [" ".join(mcl) for mcl in command_list]
 		
 	else:
 		return []
@@ -58,17 +80,12 @@ def action(message, connector, index, raw):
 		if len(message["arguments"]) < 3:
 			connector.send_message(index, get_message_target(connector, message, index), "Action to channel failed!")
 			
-		connector.send_message(index, message["arguments"][1], "\x01ACTION {}\x01".format(" ".join((message["arguments"][2:]))))
+		connector.send_message(index, message["arguments"][1], "\x01ACTION {}\x01".fo(" ".join((message["arguments"][2:]))))
 		
 @easy_bot_command("reload", True)
 def reload_plugins(message, raw):
 	if not raw:
 		return ["Reloaded following plugins: " + " ".join(reload_all_plugins())]
-		
-@easy_bot_command("shutup")
-def shut_up_lol(message, raw):
-	if not raw:
-		return ["Sorry, I didn't want to do this horrible thing. :'(", "Maybe you could filter cussings from Markov input? I'd love! I'm tired of these!"]
 		
 @bot_command("groupnick", True)
 def group_nickname(message, connector, index, raw):
@@ -77,8 +94,11 @@ def group_nickname(message, connector, index, raw):
 		
 	connector.send_message(index, "NickServ", "GROUP")
 	
-@easy_bot_command("addexempt")
+@easy_bot_command("addexempt", True)
 def add_exempt(message, raw):
+	if raw:
+		return
+
 	if len(message["arguments"]) < 2:
 		return ["Syntax: addexempt <list of hostmasks>"]
 
@@ -87,8 +107,11 @@ def add_exempt(message, raw):
 		
 	return ["Hostmasks added succesfully: " + " ".join(message["arguments"][1:])]
 	
-@easy_bot_command("removeexempt")
+@easy_bot_command("removeexempt", True)
 def add_exempt(message, raw):
+	if raw:
+		return
+
 	if len(message["arguments"]) < 2:
 		return ["Syntax: removeexempt <list of hostmasks>"]
 
@@ -99,4 +122,38 @@ def add_exempt(message, raw):
 	
 @easy_bot_command("listexempts")
 def list_exempts(message, raw):
+	if raw:
+		return
+
 	return ["Exempt list: " + " ".join(plugincon.get_exempts())]
+	
+@bot_command("kick")
+def kick_user(message, connector, index, raw):
+	if raw:
+		return
+		
+	if len(message["arguments"]) < 2:
+		connector.send_message(index, get_message_target(message, connector, index), "Not enough arguments!")
+		
+	connector.send_command(index, "KICK {} {} :{}".format(message["channel"], message["arguments"][1], " ".join()))
+	
+@bot_command("ban")
+def ban_user(message, connector, index, raw):
+	if raw:
+		return
+		
+	if len(message["arguments"]) < 2:
+		connector.send_message(index, get_message_target(message, connector, index), "Not enough arguments!")
+		
+	connector.send_command(index, "BAN {} {} :{}".format(message["channel"], message["arguments"][1], " ".join()))
+	
+@bot_command("kban")
+def kickban_user(message, connector, index, raw):
+	if raw:
+		return
+	
+	if len(message["arguments"]) < 2:
+		connector.send_message(index, get_message_target(message, connector, index), "Not enough arguments!")
+		
+	connector.send_command(index, "KICK {} {} :{}".format(message["channel"], message["arguments"][1], " ".join()))
+	connector.send_command(index, "BAN {} {} :{}".format(message["channel"], message["arguments"][1], " ".join()))

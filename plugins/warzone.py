@@ -1,4 +1,5 @@
 import time
+import json
 
 from threading import Thread
 from random import sample, randint, choice, random
@@ -69,11 +70,11 @@ def shoot_at(message, connector, index, raw):
 	if raw:
 		return
 		
-	def msg(msg):
-		connector.send_message(index, get_message_target(connector, message, index), msg)
+	def msg(mseg):
+		connector.send_message(index, get_message_target(connector, message, index), mesg)
 		
-	def hlmsg(msg):
-		msg("{}: {}".format(message["nickname"], msg))
+	def hlmsg(mseg):
+		msg("{}: {}".format(message["nickname"], mesg))
 		
 	if not message["channel"].startswith("#"):
 		msg("Run this command on a channel!")
@@ -171,3 +172,57 @@ def timebomb_user(message, connector, index, raw):
 	hlmsg2(message["arguments"][1], "A timebomb was implanted on your chest! To escape it, cut the right wire between the following {} colors: {}. Use ||timebomb_cutwire! Be quick, since you only have {} seconds!".format(len(channel_data[message["channel"]]["wire_colors"]), ", ".join(channel_data[message["channel"]]["wire_colors"]), time_fuse))
 
 	Thread(target=wait_for_timebomb, args=(time_fuse, index, message, message["nickname"], connector)).start()
+	
+# Comparing meters
+
+try:
+	meter_info = json.load(open("meters.json"))
+	
+except IOError:
+	meter_info = {}
+	
+@easy_bot_command("comparemeters")
+def compare_meters(message, raw):
+	if raw:
+		return
+
+	if len(message["arguments"]) < 3:
+		return ["Error: Not enough arguments!", "Syntax: comparemeters <subject> <list of persons to test for percentage in subject>"]
+		
+	comparisees = message["arguments"][2:]
+	subject = message["arguments"][1]
+	
+	if subject in meter_info.keys() and comparisees in [x[0] for x in meter_info[subject]]:
+		for result in meter_info[subject]:
+			if result[0] == comparisees:
+				these_results = result
+				break
+	
+		return ["It was already found out ({}):".format(subject)] + ["{}: {}%".format(person, value) for person, value in these_results[1].items()]
+		
+		
+	these_results = [comparisees]
+	trv = {}
+		
+	for person in comparisees:
+		trv[person] = randint(0, 100) + randint(0, 100) / 10 + randint(0, 100) / 100
+		
+		if trv[person] > 100:
+			trv[person] = 100
+		
+	these_results.append(trv)
+	
+	if subject in meter_info.keys():
+		meter_info[subject].append(these_results)
+		
+	else:
+		meter_info[subject] = [these_results]
+		
+	json.dump(meter_info, open("meters.json", "w"))
+		
+	return ["It was found out ({}):".format(subject)] + ["{}: {}%".format(person, value) for person, value in these_results[1].items()]
+	
+@easy_bot_command("flushmeters")
+def flush_meters(message, raw):
+	meter_info = {}
+	return ["{nick}: Success flushing all the comparing meters!".format(message["nickname"])]

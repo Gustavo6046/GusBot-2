@@ -106,9 +106,23 @@ def parse_markov_from_text(message, connector, index, raw):
 		
 		connector.send_message(index, get_message_target(connector, message, index), "{}: Text file succesfully parsed on Markov!".format(message["nickname"]))
 
-@bot_command("mkfeeder_on", False, True, True)
+@easy_bot_command("flushmarkov", True)
+def flush_markov_data(message, raw):
+	global markov_dict
+	
+	if raw:
+		return
+
+	markov_dict = {}
+	
+	return ["Markov flushed succesfully!"]
+	
+@bot_command("mk_feeder", False, True, True)
 def feed_markov_data(message, connector, index, raw):
 	global markov_dict
+	
+	if raw:
+		return
 	
 	for key, item in markov_dict.items():
 			markov_dict[key] = set(item)
@@ -116,28 +130,28 @@ def feed_markov_data(message, connector, index, raw):
 	if not raw:
 		words = simple_string_filter(" ".join(message["arguments"]), "\'\"-/\\,.!?", isalnumspace).split(" ")
 
-		for x in xrange(len(message["arguments"])):
+		for x in xrange(len(words)):
 			try:
-				if message["arguments"][x - 1] == message["arguments"][x] or message["arguments"][x] == message["arguments"][x + 1]:
+				if words[x - 1] == words[x] or words[x] == words[x + 1]:
 					continue
 			except IndexError:
 				pass
 
 			try:
-				markov_dict[message["arguments"][x - 1].lower()].add(message["arguments"][x].lower())
+				markov_dict[words[x - 1].lower()].add(words[x].lower())
 			except KeyError:
 				try:
-					markov_dict[message["arguments"][x - 1].lower()] = {message["arguments"][x].lower()}
+					markov_dict[words[x - 1].lower()] = {words[x].lower()}
 				except IndexError:
 					pass
 			except IndexError:
 				pass
 
 			try:
-				markov_dict[message["arguments"][x].lower()].add(message["arguments"][x + 1].lower())
+				markov_dict[words[x].lower()].add(words[x + 1].lower())
 			except KeyError:
 				try:
-					markov_dict[message["arguments"][x].lower()] = {message["arguments"][x + 1].lower()}
+					markov_dict[words[x].lower()] = {words[x + 1].lower()}
 				except IndexError:
 					pass
 			except IndexError:

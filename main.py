@@ -12,6 +12,8 @@ from functools import wraps
 
 plugincon.reload_all_plugins()
 
+debug = False # change this upon finding any problem with exception that can't be traced!
+
 print "Loading INI {} for server configuration...".format(argv[1])
 
 try:
@@ -52,6 +54,9 @@ def server_loop(index):
 					
 					if parse_message(message)["type"] == "PRIVMSG":
 						connector.send_message(index, parse_message(message)["channel"], "Error parsing command! ({}: {})".format(plugin_error.__class__.__name__, plugin_error))
+						
+					if debug:
+						raise
 
 		connector.relay_out_queue(index)
 
