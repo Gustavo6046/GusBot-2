@@ -648,3 +648,37 @@ def list_ammos(message, raw):
 		return
 		
 	return ["Ammo types: " + ", ".join(ammo_data.keys())]
+	
+@bot_command("GETNICKCHANGES0")
+def get_nick_changes(message, connector, index, raw):
+	if not raw:
+		return
+		
+	try:
+		if message.split(" ")[1].upper() != "NICK":
+			return
+			
+	except IndexError:
+		return
+	
+	old_nick = message.split("!")[0]
+	
+	try:
+		new_nick = message.split(" ")[2]
+		
+	except IndexError:
+		return
+		
+	user_data[new_nick] = user_data[old_nick]
+	user_data.__delitem__(old_nick)
+	
+@easy_bot_command("smw_resetmatch")
+def reset_smw_match(message, raw):
+	global user_data
+
+	if raw:
+		return
+		
+	user_data = {}
+		
+	return ["Reset with success!", "...Anyone gonna join now?"]
