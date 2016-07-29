@@ -72,6 +72,7 @@ def parse_message(raw_message):
 			"nickname": message.split("!")[0],
 			"ident": message.split("!")[1].split("@")[0],
 			"hostname": message.split(" ")[0].split("@")[1], "type": message.split(" ")[1],
+			"host": message.split(" ")[0],
 			"channel": message.split(" ")[2],
 			"body": ":".join(message.split(":")[1:]),
 			"arguments": ":".join(message.split(":")[1:]).split(" "),

@@ -54,11 +54,6 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 			print message["raw"]
 			print command_prefix + command_name
 		
-			for hostmask in exempt_list:
-				if fnmatch.fnmatch(message["hostname"], hostmask):
-					connector.send_message(index, get_message_target(connector, message, index), "You are exempted from using commands!")
-					return
-		
 			if not all_messages:
 				if command_name == None:
 					command_name_to_use = func.__name__
@@ -69,6 +64,11 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 				print get_bot_nickname(connector, index)
 
 				if message["type"] == "PRIVMSG":
+					for hostmask in exempt_list:
+						if fnmatch.fnmatch(message["host"], hostmask):
+							connector.send_message(index, get_message_target(connector, message, index), "You are exempted from using commands!")
+							return
+				
 					if (
 							not admin_command or message["nickname"] == master
 					) and (
@@ -173,6 +173,11 @@ def bot_command(command_name=None, admin_command=False, all_messages=False, dont
 				print master
 
 				if message["type"] == "PRIVMSG":
+					for hostmask in exempt_list:
+						if fnmatch.fnmatch(message["host"], hostmask):
+							connector.send_message(index, get_message_target(connector, message, index), "You are exempted from using commands!")
+							return
+				
 					if (
 							not admin_command or message["nickname"] == master
 					) and (
@@ -184,6 +189,7 @@ def bot_command(command_name=None, admin_command=False, all_messages=False, dont
 					):
 						print "Executing command!"
 						func(message, connector, index, False)
+
 						
 					else:
 						if (

@@ -29,6 +29,13 @@ def wait_for_timebomb(time, index, message, user, connector):
 	
 	if channel_data[message["channel"]]["timebomb_running"]:
 		timebomb_explode(index, message, user, connector)
+	
+@easy_bot_command("timebomb_reset", True)
+def reset_timebomb(message, raw):
+	if raw:
+		return
+		
+	channel_data = {}
 		
 @bot_command("timebomb_cutwire")
 def cut_wire_for_timebomb(message, connector, index, raw):
@@ -71,10 +78,10 @@ def shoot_at(message, connector, index, raw):
 		return
 		
 	def msg(mseg):
-		connector.send_message(index, get_message_target(connector, message, index), mesg)
+		connector.send_message(index, get_message_target(connector, message, index), mseg)
 		
 	def hlmsg(mseg):
-		msg("{}: {}".format(message["nickname"], mesg))
+		msg("{}: {}".format(message["nickname"], mseg))
 		
 	if not message["channel"].startswith("#"):
 		msg("Run this command on a channel!")
@@ -205,10 +212,10 @@ def compare_meters(message, raw):
 	trv = {}
 		
 	for person in comparisees:
-		trv[person] = randint(0, 100) + randint(0, 100) / 10 + randint(0, 100) / 100
+		trv[person] = float(randint(0, 100)) + float(randint(0, 100)) / 10 + float(randint(0, 100)) / 100
 		
-		if trv[person] > 100:
-			trv[person] = 100
+		if trv[person] > 100.0:
+			trv[person] = 100.0
 		
 	these_results.append(trv)
 	
@@ -222,7 +229,7 @@ def compare_meters(message, raw):
 		
 	return ["It was found out ({}):".format(subject)] + ["{}: {}%".format(person, value) for person, value in these_results[1].items()]
 	
-@easy_bot_command("flushmeters")
+@easy_bot_command("flushmeters", True)
 def flush_meters(message, raw):
 	meter_info = {}
 	return ["{nick}: Success flushing all the comparing meters!".format(message["nickname"])]
