@@ -96,3 +96,10 @@ def spike_with_spike(message, raw):
 		return
 
 	return ["Ouch! Where did you get that {} from?".format(choice(["stalagmite", "stalagtite", "triangle", "claw", "knife", "horn", "table corner", "snake tooth", "lion tooth", "vampire tooth", "coal stone"]))]
+	
+@easy_bot_command("fixit")
+def fix_it(message, raw):
+	if raw:
+		return
+	
+	return ["FIXIT FIXIT FIXIT! FIXIT FIXIT FIXIT! FIXIT FIXIT FIXIT! FIXIT FIXIT FIXIT! FIXIT FIXIT FIXIT!", "FIXIT FIXIT FIXIT!"]

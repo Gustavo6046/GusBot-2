@@ -244,6 +244,37 @@ def thievery_move(message, raw):
 
 user_data = {}
 
+ammo_data = {
+	"rockets": {
+		"weapons": [
+			"rockox",
+		],
+		"cost": 10,
+		"amount": 1,
+	},
+	"serum": {
+		"weapons": [
+			"serum",
+		],
+		"cost": 2,
+		"amount": 2,
+	},
+	"gas": {
+		"weapons": [
+			"gas",
+		],
+		"cost": 2,
+		"amount": 1,
+	},
+	"clips": {
+		"weapons": [
+			"machinegun",
+		],
+		"cost": 5,
+		"amount": 2,
+	},
+}
+
 weapon_data = {
 	"gas": {
 		"damage": 3,
@@ -251,6 +282,7 @@ weapon_data = {
 		"drainfungushealth": True,
 		"drainhealth": True,
 		"randomrange": 4,
+		"cost": 20,
 	},
 	"serum": {
 		"damagefungus": 8,
@@ -258,6 +290,7 @@ weapon_data = {
 		"drainfungushealth": True,
 		"drainhealth": False,
 		"randomrange": 10,
+		"cost": 5,
 	},
 	"rockox": {
 		"damagefungus": 22,
@@ -265,6 +298,7 @@ weapon_data = {
 		"drainfungushealth": False,
 		"drainhealth": True,
 		"randomrange": 40,
+		"cost": 50,
 	},
 	"machinegun": {
 		"damagefungus": 4,
@@ -272,6 +306,7 @@ weapon_data = {
 		"drainhealth": True,
 		"drainfungushealth": False,
 		"randomrange": 10,
+		"cost": 18,
 	},
 }
 
@@ -310,6 +345,7 @@ def join_warzone_stats(message, raw):
 		
 	user_data[user] = {
 		"host": message["host"],
+		"money": 30,
 		"mush": is_mush,
 		"spores": (0 if not is_mush else 6),
 		"immune": (5 if not is_mush else 0),
@@ -359,6 +395,7 @@ def smw_shoot_at(message, raw):
 	if len(message["arguments"]) < 3:
 		return ["Syntax: smw_shoot <target> <weapon>"]
 	
+	user = message["nickname"]
 	target = message["arguments"][1]
 	weapon = message["arguments"][2]
 	
@@ -377,7 +414,13 @@ def smw_shoot_at(message, raw):
 	gun = weapon_data[weapon]
 	
 	realdamage = gun["damage"] + randint(-gun["randomrange"], gun["randomrange"])
-	realfdamage = gun["damage"] + randint(-gun["randomrange"], gun["randomrange"])
+	realfdamage = gun["damagefungus"] + randint(-gun["randomrange"], gun["randomrange"])
+	
+	if realdamage < 0:
+		realdamage = 0
+		
+	if realfdamage < 0:
+		realfdamage = 0
 	
 	if gun["drainhealth"]:
 		user_data[target]["health"] -= realdamage
@@ -386,11 +429,17 @@ def smw_shoot_at(message, raw):
 		user_data[target]["fungushealth"] -= realfdamage
 		
 	if user_data[target]["fungushealth"] < 1:
+		user_data[user]["money"] += 50
 		user_data[target]["mush"] = False
+		return ["{} is not a mush anymore!".format(target)]
 	
 	if user_data[target]["health"] < 1:
+		user_data[user]["money"] += 30
 		user_data.__delitem__(target)
 		return ["{} is now dead! He's out of the game! Rejoin?".format(target)]
+		
+	if user_data[target]["mush"] != user_data[user]["mush"]:
+		user_data[user]["money"] += 5
 		
 	if not user_data[target]["mush"]:
 		return ["Dealt {} damage into the target!".format((real_damage if gun["drainhealth"] else 0))]
@@ -477,8 +526,9 @@ def smw_user_status(message, raw):
 	
 	return [
 		"{} Status:".format(user),
+		"You have {} money.".format(user_data[user]["money"]),
 		"You are{}a mush.".format((" not " if not user_data[user]["mush"] else " ")),
-		"You have {} health{}.".format(user_data[user]["health"], (" ({} fungus health)".format(user_data[user]["health"]) if user_data[user]["mush"] else "")),
+		"You have {} health{}.".format(user_data[user]["health"], (" ({} fungus health)".format(user_data[user]["fungushealth"]) if user_data[user]["mush"] else "")),
 		"You have immune system of {} in the Rehermann scale.".format(user_data[user]["immune"]),
 		"You have the following weapons: " + ", ".join([weapon for weapon, data in user_data[user]["weapons"].items() if data]),
 		"You have the following ammunition: " + ", ".join(": ".join([ammo[0], str(ammo[1])]) for ammo in user_data[user]["ammo"].items()),
@@ -503,9 +553,10 @@ def smw_get_user_status(message, raw):
 		return ["Error: Target didn't join!"]
 	
 	return [
-		"{} Status:".format(target),	
+		"{} Status:".format(target),
+		"He/she has {} money.".format(user_data[target]["money"]),
 		"He/she is{}a mush.".format((" not " if not user_data[target]["mush"] else " ")),
-		"He/she has {} health{}.".format(user_data[target]["health"], (" ({} fungus health)".format(user_data[target]["health"]) if user_data[target]["mush"] else "")),
+		"He/she has {} health{}.".format(user_data[target]["health"], (" ({} fungus health)".format(user_data[target]["fungushealth"]) if user_data[target]["mush"] else "")),
 		"He/she has immune system of {} in the Rehermann scale.".format(user_data[target]["immune"]),
 		"He/she has the following weapons: " + ", ".join([weapon for weapon, data in user_data[target]["weapons"].items() if data]),
 		"He/she has the following ammunition: " + ", ".join(": ".join([ammo[0], str(ammo[1])]) for ammo in user_data[target]["ammo"].items()),
@@ -524,3 +575,76 @@ def smw_about(message, raw):
 		" ",
 		"Sentient Mushes series; Inspired by another Twinoidian game."
 	]
+	
+@easy_bot_command("smw_buygun")
+def smw_buy_a_big_weapon(message, raw):
+	if raw:
+		return
+		
+	user = message["nickname"]
+	
+	if not user in user_data.keys():
+		return ["Join the game first using ||smw_join !"]
+		
+	try:
+		weapon = message["arguments"][1]
+		
+	except IndexError:
+		return ["Syntax: smw_buygun <gun's name>"]
+		
+	money = user_data[user]["money"]
+	
+	if weapon not in weapon_data.keys():
+		return ["You can't buy your inventions; they're already yours!", "Well, maybe of your imagination, that is... :3"]
+		
+	if user_data[user]["weapons"][weapon]:
+		return ["You already have that weapon!"]
+		
+	if user_data[user]["money"] < weapon_data[weapon]["cost"]:
+		return ["Too little money!"]
+		
+	user_data[user]["money"] -= weapon_data[weapon]["cost"]
+	user_data[user]["weapons"][weapon] = True
+	return "Bought weapon succesfully!"
+	
+@easy_bot_command("smw_buyammo")
+def smw_buy_a_big_weapon(message, raw):
+	if raw:
+		return
+		
+	user = message["nickname"]
+	
+	if not user in user_data.keys():
+		return ["Join the game first using ||smw_join !"]
+		
+	try:
+		ammo_type = message["arguments"][1]
+		
+	except IndexError:
+		return ["Syntax: smw_buyammo <ammo type>"]
+		
+	money = user_data[user]["money"]
+	
+	if ammo_type not in ammo_data.keys():
+		return ["You can't buy your inventions; they're already yours!", "Well, maybe of your imagination, that is... :3"]
+		
+	if user_data[user]["money"] < ammo_data[ammo_type]["cost"]:
+		return ["Too little money!"]
+		
+	user_data[user]["money"] -= ammo_data[ammo_type]["cost"]
+	user_data[user]["ammo_data"][ammo_type] += ammo_data[ammo_type]["buyamount"]
+	return "Bought weapon succesfully!"
+	
+@easy_bot_command("smw_listweaponry")
+def list_weaponry(message, raw):
+	if raw:
+		return
+
+	return ["Weapons: " + ", ".join(weapon_data.keys())]
+	
+@easy_bot_command("smw_listammotypes")
+def list_ammos(message, raw):
+	if raw:
+		return
+		
+	return ["Ammo types: " + ", ".join(ammo_data.keys())]
