@@ -1,3 +1,5 @@
+import time
+
 from Queue import Empty
 from socket import SOCK_STREAM, socket, AF_INET, error
 from threading import Thread
@@ -206,6 +208,7 @@ class IRCConnector(object):
 				raw_received_message = sock.recv(1024).decode('utf-8')
 
 				if raw_received_message == u"":
+					time.sleep(0.2)
 					continue
 
 				if not raw_received_message.endswith(u"\r\n"):
@@ -226,6 +229,7 @@ class IRCConnector(object):
 					try:
 						compdata = z.split(" ")[1]
 					except IndexError:
+						time.sleep(0.2)
 						continue
 					if compdata == str(auth_numeric):
 						return
@@ -362,6 +366,7 @@ class IRCConnector(object):
 			worked = True
 			log(self.logfile, v)
 			self.connections[index][0].sendall(v.encode('utf-8'))
+			sleep(0.5)
 
 		except Empty:
 			if not worked:

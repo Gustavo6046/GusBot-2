@@ -80,7 +80,7 @@ def action(message, connector, index, raw):
 		if len(message["arguments"]) < 3:
 			connector.send_message(index, get_message_target(connector, message, index), "Action to channel failed!")
 			
-		connector.send_message(index, message["arguments"][1], "\x01ACTION {}\x01".format(" ".join((message["arguments"][2:]))))
+		connector.send_message(index, message["arguments"][1], "\x01ACTION {}\x01".formatx(" ".join((message["arguments"][2:]))))
 		
 @easy_bot_command("reload", True)
 def reload_plugins(message, raw):
@@ -133,7 +133,7 @@ def kick_user(message, connector, index, raw):
 		return
 		
 	if len(message["arguments"]) < 2:
-		connector.send_message(index, get_message_target(message, connector, index), "Not enough arguments!")
+		connector.send_message(index, get_message_target(connector, message, index), "Not enough arguments!")
 		
 	connector.send_command(index, "KICK {} {} :{}".format(message["channel"], message["arguments"][1], " ".join()))
 	
@@ -143,7 +143,7 @@ def ban_user(message, connector, index, raw):
 		return
 		
 	if len(message["arguments"]) < 2:
-		connector.send_message(index, get_message_target(message, connector, index), "Not enough arguments!")
+		connector.send_message(index, get_message_target(connector, message, index), "Not enough arguments!")
 		
 	connector.send_command(index, "BAN {} {} :{}".format(message["channel"], message["arguments"][1], " ".join()))
 	
@@ -153,7 +153,20 @@ def kickban_user(message, connector, index, raw):
 		return
 	
 	if len(message["arguments"]) < 2:
-		connector.send_message(index, get_message_target(message, connector, index), "Not enough arguments!")
+		connector.send_message(index, get_message_target(connector, message, index), "Not enough arguments!")
 		
 	connector.send_command(index, "KICK {} {} :{}".format(message["channel"], message["arguments"][1], " ".join()))
 	connector.send_command(index, "BAN {} {} :{}".format(message["channel"], message["arguments"][1], " ".join()))
+	
+@bot_command("invite")
+def invite_user(message, connector, index, raw):
+	if raw:
+		return
+		
+	tgtchan = get_message_target(connector, message, index)
+		
+	if len(message["arguments"]) < 2:
+		connector.send_message(index, tgtchan, "Syntax: invite <user>")
+		return
+
+	connector.send_command(index, "INVITE {} {}".format(message["arguments"][1], message["channel"]))

@@ -47,21 +47,14 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 		global command_names
 		
 		current_plugin = get_current_plugin()
-		
-		print current_plugin
 
 		def wrapper(message, connector, index, command_prefix, master):
-			print message["raw"]
-			print command_prefix + command_name
-		
 			if not all_messages:
 				if command_name == None:
 					command_name_to_use = func.__name__
 
 				else:
 					command_name_to_use = command_name
-					
-				print get_bot_nickname(connector, index)
 
 				if message["type"] == "PRIVMSG":
 					for hostmask in exempt_list:
@@ -81,22 +74,6 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 						print "Executing command!"
 						result = func(message, False)
 						
-					else:
-						if (
-							not (not admin_command or message["nickname"] == master)
-							and (not dont_parse_if_prefix or not message["message"].startswith(command_prefix))
-							and (not message["nickname"] == message["channel"] == get_bot_nickname(connector, index))
-							and (not dont_parse_if_prefix and message["arguments"][0].lower() == (command_prefix + command_name_to_use).lower())
-						):
-							connector.send_message(index, get_message_target(connector, message, index), "{}: Permission Denied!".format(message["nickname"]))
-					
-						print "Command couldn't run:"
-						print "Admin certified:", not admin_command or message["nickname"] == master
-						print "Don't-parse-if-prefix certified:", not dont_parse_if_prefix or not message["message"].startswith(command_prefix)
-						print "Not self-sending-message certified:", not message["nickname"] == message["channel"] == get_bot_nickname(connector, index)
-						print "Matching command:", not dont_parse_if_prefix and message["arguments"][0].lower() == (command_prefix + command_name_to_use).lower()
-						return
-						
 					if not (not dont_parse_if_prefix or not message["message"].startswith(command_prefix)):
 						print "Error: prefix found!"
 						return
@@ -105,7 +82,11 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 					print "Executing command! (raw)"
 					result = func(message, True)
 					
-				if not result:
+				try:
+					if not result:
+						return
+						
+				except UnboundLocalError:
 					return
 					
 				if isinstance(result, str):
@@ -168,9 +149,6 @@ def bot_command(command_name=None, admin_command=False, all_messages=False, dont
 
 				else:
 					command_name_to_use = command_name
-					
-				print get_bot_nickname(connector, index)
-				print master
 
 				if message["type"] == "PRIVMSG":
 					for hostmask in exempt_list:
@@ -199,12 +177,6 @@ def bot_command(command_name=None, admin_command=False, all_messages=False, dont
 							and (not dont_parse_if_prefix and message["arguments"][0].lower() == (command_prefix + command_name_to_use).lower())
 						):
 							connector.send_message(index, get_message_target(connector, message, index), "{}: Permission Denied!".format(message["nickname"]))
-							
-						print "Command couldn't run:"
-						print "Admin certified:", not admin_command or message["nickname"] == master
-						print "Don't-parse-if-prefix certified:", not dont_parse_if_prefix or not message["message"].startswith(command_prefix)
-						print "Not self-sending-message certified:", not message["nickname"] == message["channel"] == get_bot_nickname(connector, index)
-						print "Matching command:", not dont_parse_if_prefix and message["arguments"][0].lower() == (command_prefix + command_name_to_use).lower()
 						
 					if not (not dont_parse_if_prefix or not message["message"].startswith(command_prefix)):
 						print "Error: prefix found!"

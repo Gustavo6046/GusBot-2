@@ -1,6 +1,6 @@
 import json
 
-from random import choice
+from random import choice, sample, randint
 from plugincon import bot_command, easy_bot_command, get_message_target, get_bot_nickname, reload_all_plugins
 
 
@@ -103,3 +103,104 @@ def fix_it(message, raw):
 		return
 	
 	return ["FIXIT FIXIT FIXIT! FIXIT FIXIT FIXIT! FIXIT FIXIT FIXIT! FIXIT FIXIT FIXIT! FIXIT FIXIT FIXIT!", "FIXIT FIXIT FIXIT!"]
+	
+@easy_bot_command("pizza")
+def pizza(message, raw):
+	if raw:
+		return
+		
+	return ["Mmmm, pizza!", "\x01ACTION takes one of the slices\x01"]
+	
+@easy_bot_command("kaboom")
+def explosion(message, raw):
+	if raw:
+		return
+		
+	return "\x01ACTION gets split into tiny little pieces. Spams respawn button, and now reappers in the sky! Falls down over {}. :3\x01".format(message["nickname"])
+
+combo_sections = {
+	"Wall bounce! (+100)": 100,
+	"Floor bounce! (-50)": -50,
+	"Platform roll! (+250)": 250,
+	"Light Switch Hit! (+1000)": 1000,
+	"Kick Up! (+350)": 350,
+	"Bounce on desk! (+150)": 150,
+	"Hit the Keyboard! (IRC spamcrap, -100)": -100,
+	"Hit the computer! (crashed computer, -420)": -420,
+	"Zorched your best friend! (-500)": -500,
+	"Zorched that baddie that was hidden over there! (+500)": 50,
+	"Killed that Branx in that corner! (+800)": 800,
+	"Kicked spammers off #sentientmushes! (+650)": 650,
+	"Bounce on bed! (+350)": 350,
+	"Bounced off your hand! (+120)": 120,
+}
+
+@easy_bot_command("soccercombo")
+def soccer_combo_match(message, raw):
+	global combo_sections
+
+	if raw:
+		return
+		
+	combos = []
+	
+	for x in xrange(-1, randint(4, 9)):
+		combos.append(choice(combo_sections.items()))
+		
+	return "Combo: {} -> {} points!".format(" | ".join([data[0] for data in combos]), reduce(lambda x, y: x + y, [data[1] for data in combos]))
+	
+@bot_command("copysequences")
+def copysequences(message, connector, index, raw):
+	def msg(mesg):
+		connector.send_message(index, get_message_target(connector, message, index), mesg)
+
+	if raw:
+		return
+
+	replies = ["I'll simply put a (c) and use it out of nowhere because why not.", "Oh no all the .US.GOV websites are attacking me and my master!", "Oh no they are attacking Brazilians!", "Oh no they are taking over Brazil!", "Oh no a world war!", "\x01ACTION wakes up\x01", "Woah... that was... AWESOME!"]
+	
+	for x in replies:
+		msg(x)
+
+zorch_dests = []
+		
+@easy_bot_command("addzorchdest")
+def add_zorch_destination(message, raw):
+	global zorch_dests
+	
+	if raw:
+		return
+		
+	if len(message["arguments"]) < 2:
+		return ["Syntax: addzorchdest <comma-separated list of zorching destinations; preferably in a galaxy far, far away :3 >"]
+		
+	print [x for x in " ".join(message["arguments"][1:]).split(",") if len(x) > 0]
+		
+	zorch_dests += [x for x in (" ".join(message["arguments"][1:])).split(",") if len(x) > 0]
+	
+	return ["Added zorch destinations succesfully!"]
+	
+@easy_bot_command("flushzorchdests")
+def flush_zorch_destinations(message, raw):
+	global zorch_dests
+	
+	if raw:
+		return
+	
+	zorch_dests = []
+	
+	return ["Zorch destinations flushed succesfully!"]
+		
+@easy_bot_command("zorch")
+def zorch_into(message, raw):
+	global zorch_dests
+
+	if raw:
+		return
+		
+	try:
+		return ["Zorched {} {}!".format(" ".join(message["arguments"][1:]), choice(zorch_dests))]
+		
+	except IndexError:
+		return ["Zorch who?"]
+		

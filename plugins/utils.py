@@ -24,7 +24,7 @@ def website_title(message, raw):
 		
 	except requests.exceptions.MissingSchema:
 		try:
-			request = get("http://" + " ".join(message["arguments"][1:]), timeout=10)
+			request = get("http://" + " ".join(message["arguments"][1:]), timeout=15)
 			
 		except requests.ConnectionError:
 			return ["Error with connection!"]

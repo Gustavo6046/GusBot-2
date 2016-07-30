@@ -3,7 +3,7 @@ import BeautifulSoup
 import requests
 import re
 
-parsed_websites = []
+markov_filter = []
 
 def visible(element):
     if element.parent.name in ['style', 'script', '[document]', 'head', 'title']:
@@ -131,31 +131,43 @@ def feed_markov_data(message, connector, index, raw):
 		words = simple_string_filter(" ".join(message["arguments"]), "\'\"-/\\,.!?", isalnumspace).split(" ")
 
 		for x in xrange(len(words)):
-			try:
-				if words[x - 1] == words[x] or words[x] == words[x + 1]:
+			if x - 1 > -1:			
+				try:
+					if words[x - 1] == words[x] or words[x] == words[x + 1]:
+						continue
+				except IndexError:
+					pass
+
+				try:
+					markov_dict[words[x - 1].lower()].add(words[x].lower())
+				except KeyError:
+					try:
+						markov_dict[words[x - 1].lower()] = {words[x].lower()}
+					except IndexError:
+						pass
+				except IndexError:
+					pass
+
+				try:
+					markov_dict[words[x].lower()].add(words[x + 1].lower())
+				except KeyError:
+					try:
+						markov_dict[words[x].lower()] = {words[x + 1].lower()}
+					except IndexError:
+						pass
+				except IndexError:
 					continue
-			except IndexError:
-				pass
-
-			try:
-				markov_dict[words[x - 1].lower()].add(words[x].lower())
-			except KeyError:
+			
+			else:
 				try:
-					markov_dict[words[x - 1].lower()] = {words[x].lower()}
+					markov_dict[words[x].lower()].add(words[x + 1].lower())
+				except KeyError:
+					try:
+						markov_dict[words[x].lower()] = {words[x + 1].lower()}
+					except IndexError:
+						pass
 				except IndexError:
-					pass
-			except IndexError:
-				pass
-
-			try:
-				markov_dict[words[x].lower()].add(words[x + 1].lower())
-			except KeyError:
-				try:
-					markov_dict[words[x].lower()] = {words[x + 1].lower()}
-				except IndexError:
-					pass
-			except IndexError:
-				continue
+					continue
 				
 @easy_bot_command("markov")
 def get_markov(message, raw):
@@ -174,12 +186,15 @@ def get_markov(message, raw):
 	except KeyError:
 		pass
 
-	if len(message["arguments"]) < 2:
-		return["{0}: Syntax: markov <words for multi-level Markov>".format(message["nickname"])]
-			
 	# Get the string!
-	words = message["arguments"][1:]
-	x = words[0]
+	if len(message["arguments"]) < 2:
+		x = choice(markov_dict.keys())
+		words = [x]
+		
+	else:
+		words = message["arguments"][1:]
+		x = words[0]
+			
 	level = 0
 	result = "{0}: ".format(message["nickname"]) + x
 	
@@ -205,7 +220,11 @@ def get_markov(message, raw):
 		level += 1
 		
 		if level > 70:
-			return [result]
+			break
+			
+	for cuss in markov_filter:
+		print "Filtering {cuss} from {string}!".format(cuss=cuss, string=result)
+		result = result.replace(cuss, "*")
 			
 	return [result]
 	
@@ -233,6 +252,35 @@ def save_markov_json(message, raw):
 	else:
 		return []
 		
+@easy_bot_command("loadmarkovfilter")
+def load_markov_filter(message, raw):
+	global markov_filter
+
+	if raw:
+		return
+		
+	if len(message["arguments"]) < 2:
+		return ["Error: Not enough arguments!"]
+		
+	for cuss in open(" ".join(message["arguments"][1:])).xreadlines():
+		markov_filter.append(cuss)
+		
+	return ["Blacklist updated succesfully!"]
+	
+@easy_bot_command("savemarkovfilter")
+def save_markov_filter(message, raw):
+	global markov_filter
+	
+	if raw:
+		return
+		
+	if len(message["arguments"]) < 2:
+		return ["Error: Not enough arguments!"]
+		
+	open(" ".join(message["arguments"][1:]), "w").writelines(markov_filter)
+		
+	return ["Blacklist updated succesfully!"]
+		
 @easy_bot_command("loadmarkov")
 def load_markov_json(message, raw):
 	global markov_dict
@@ -253,6 +301,43 @@ def load_markov_json(message, raw):
 	else:
 		return []
 		
+@easy_bot_command("listfiltermarkov")
+def list_cusses(message, raw):
+	if raw:
+		return
+		
+	return "Cusses blacklisted: " + ", ".join(markov_filter)
+		
+@easy_bot_command("addfiltermarkov")
+def filter_cusses(message, raw):
+	if raw:
+		return
+		
+	global markov_filter
+	
+	try:
+		markov_filter += message["arguments"][1:]
+		return ["Updated word blacklist succesfully!"]
+		
+	except IndexError:
+		return ["Syntax: addfiltermarkov <list of cusses or blacklisted words>"]
+		
+@easy_bot_command("removefiltermarkov")
+def unfilter_cusses(message, raw):
+	if raw:
+		return
+		
+	global markov_filter
+	
+	try:
+		for cuss in message["arguments"][1:]:
+			markov_filter.remove(cuss)
+			
+		return ["Updated word blacklist succesfully!"]
+		
+	except IndexError:
+		return ["Syntax: removefiltermarkov <list of words to un-blacklist>"]
+		
 @easy_bot_command("parsewebmarkov")
 def parse_web_markov(message, raw):
 	global markov_dict
@@ -269,14 +354,9 @@ def parse_web_markov(message, raw):
 	debug = "--debug" in message["arguments"][1:]
 			
 	if len(message["arguments"]) < 2:
-			return ["{}: Error: No argument provided! (Syntax: parsewebmarkov <list of URLs>)".format(message["nickname"])]
+		return ["{}: Error: No argument provided! (Syntax: parsewebmarkov <list of URLs>)".format(message["nickname"])]
 			
 	for website in filter(lambda x: not x.startswith("--"), message["arguments"][1:]):
-		if website in parsed_websites:
-			warnings.append("Website rejected! (already parsed)")
-			
-		parsed_websites.append(website)
-	
 		print "Parsing Markov from {}!".format(website)
 		messages.append("Parsing Markov from {}!".format(website))
 	
