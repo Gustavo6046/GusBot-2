@@ -231,5 +231,10 @@ def compare_meters(message, raw):
 	
 @easy_bot_command("flushmeters", True)
 def flush_meters(message, raw):
+	if raw:
+		return
+
+	global meter_info
+		
 	meter_info = {}
 	return ["{nick}: Success flushing all the comparing meters!".format(message["nickname"])]

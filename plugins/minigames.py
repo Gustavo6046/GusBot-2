@@ -190,6 +190,8 @@ def smw_shoot_at(message, raw):
 	
 	if user_data[user]["ammo"][weapon_data[gun]["ammotype"]] < 1:
 		return ["You are loading empty clips!"]
+		
+	user_data[user]["ammo"][weapon_data[gun]["ammotype"]] -= 1
 	
 	if realdamage < 0:
 		realdamage = 0
@@ -425,22 +427,34 @@ def list_ammos(message, raw):
 		
 	return ["Ammo types: " + ", ".join(ammo_data.keys())]
 	
-@bot_command("GETNICKCHANGES0")
-def get_nick_changes(message, connector, index, raw):
-	if not raw:
+@easy_bot_command("smw_hide")
+def hide_frowning_as_always(message, raw):
+	if raw:
 		return
 		
+	user = message["nickname"]
+	
+	if user not in user_data.keys():
+		return ["You hide... but why? Are you really hiding or did you mean to hide inminigame?"]
+	
+	if user_data[user]["mush"]:
+		return ["You hide somewhere, frowning. You want to get out of the confusion.", "You didn't want to be enemy of anyone.", "Suddenly, you realize. Hearts are emotionally weak. With this in mind, there must be a way out!"]
+	
+	return ["You hide somewhere, frowning. You miss your friends.", "Maybe if you show your sadness and maybe surrender, since you might not be able to fight back..."]
+	
+@bot_command("GETNICKCHANGES0")
+def get_nick_changes(message, connector, index, raw):
 	try:
-		if message.split(" ")[1].upper() != "NICK":
+		if message["raw"].split(" ")[1].upper() != "NICK":
 			return
 			
 	except IndexError:
 		return
 	
-	old_nick = message.split("!")[0]
+	old_nick = message["raw"].split("!")[0]
 	
 	try:
-		new_nick = message.split(" ")[2]
+		new_nick = message["raw"].split(" ")[2]
 		
 	except IndexError:
 		return

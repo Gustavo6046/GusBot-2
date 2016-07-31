@@ -12,7 +12,7 @@ from functools import wraps
 
 plugincon.reload_all_plugins()
 
-debug = False # change this upon finding any problem with exception that can't be traced!
+debug = False # change this in the source code upon finding any problem with exception that can't be traced!
 
 print "Loading INI {} for server configuration...".format(argv[1])
 

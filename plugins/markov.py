@@ -262,8 +262,7 @@ def load_markov_filter(message, raw):
 	if len(message["arguments"]) < 2:
 		return ["Error: Not enough arguments!"]
 		
-	for cuss in open(" ".join(message["arguments"][1:])).xreadlines():
-		markov_filter.append(cuss)
+	markov_filter += open(" ".join(message["arguments"][1:])).read().splitlines()
 		
 	return ["Blacklist updated succesfully!"]
 	
@@ -277,7 +276,7 @@ def save_markov_filter(message, raw):
 	if len(message["arguments"]) < 2:
 		return ["Error: Not enough arguments!"]
 		
-	open(" ".join(message["arguments"][1:]), "w").writelines(markov_filter)
+	open(" ".join(message["arguments"][1:]), "w").write("\n".join(markov_filter))
 		
 	return ["Blacklist updated succesfully!"]
 		

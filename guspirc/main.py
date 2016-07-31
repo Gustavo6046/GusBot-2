@@ -1,4 +1,5 @@
 import time
+import socket as skt
 
 from Queue import Empty
 from socket import SOCK_STREAM, socket, AF_INET, error
@@ -54,7 +55,7 @@ def log(logfile, msg):
 	print x
 	
 	try:
-		logfile.write(x.decode("utf-8"))
+		logfile.write(x.decode("utf-8") + "\n".decode("utf-8"))
 
 	except (UnicodeDecodeError, UnicodeEncodeError):
 		logfile.write(x)
@@ -182,7 +183,11 @@ class IRCConnector(object):
 
 		log(self.logfile, u"Socket making done!")
 
-		sock.connect((server, int(port)))
+		try:
+			sock.connect((server, int(port)))
+			
+		except skt.gaierror:
+			return False
 
 		log(self.logfile, u"Connected socket!")
 
@@ -228,13 +233,16 @@ class IRCConnector(object):
 
 					try:
 						compdata = z.split(" ")[1]
+						
 					except IndexError:
 						time.sleep(0.2)
 						continue
+						
 					if compdata == str(auth_numeric):
-						return
+						return true
 
-		waituntilnotice()
+		if not waituntilnotice():
+			return False
 
 		log(self.logfile, u"NickServ Notice found!")
 

@@ -80,7 +80,7 @@ def action(message, connector, index, raw):
 		if len(message["arguments"]) < 3:
 			connector.send_message(index, get_message_target(connector, message, index), "Action to channel failed!")
 			
-		connector.send_message(index, message["arguments"][1], "\x01ACTION {}\x01".formatx(" ".join((message["arguments"][2:]))))
+		connector.send_message(index, message["arguments"][1], "\x01ACTION {}\x01".format(" ".join((message["arguments"][2:]))))
 		
 @easy_bot_command("reload", True)
 def reload_plugins(message, raw):
