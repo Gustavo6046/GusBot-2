@@ -22,9 +22,12 @@ def timebomb_explode(index, message, user, connector):
 	channel_data[message["channel"]]["timebomb_running"] = False
 	connector.send_command(index, "KICK {} {} :Exploded into pieces!".format(message["channel"], user))
 
-def wait_for_timebomb(time, index, message, user, connector):
+def wait_for_timebomb(time_fuse, index, message, user, connector):
 	print "Called!"
-	time.sleep(time)
+	
+	while time.time() < time_fuse:
+		time.sleep(0.25)
+	
 	print "Time gone!"
 	
 	if channel_data[message["channel"]]["timebomb_running"]:
@@ -178,7 +181,18 @@ def timebomb_user(message, connector, index, raw):
 		
 	hlmsg2(message["arguments"][1], "A timebomb was implanted on your chest! To escape it, cut the right wire between the following {} colors: {}. Use ||timebomb_cutwire! Be quick, since you only have {} seconds!".format(len(channel_data[message["channel"]]["wire_colors"]), ", ".join(channel_data[message["channel"]]["wire_colors"]), time_fuse))
 
-	Thread(target=wait_for_timebomb, args=(time_fuse, index, message, message["nickname"], connector)).start()
+	Thread(target=wait_for_timebomb, args=(time_fuse + time.time(), index, message, message["arguments"][1], connector)).start()
+	
+@easy_bot_command("timebomb_delete", True)
+def remove_timebomb_from_channel(message, raw):
+	if raw:
+		return
+
+	if not message["channel"].startswith("#"):
+		return ["In a channel, please!"]
+
+	channel_data.__delitem__(message["channel"])
+	return ["Success removing timebomb from channel!"]
 	
 # Comparing meters
 

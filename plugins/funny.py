@@ -120,7 +120,7 @@ def mood_list(message, raw):
 	if raw:
 		return
 		
-	return ["||feeling moods: mad | stressed | angry, pain, annoyed | bullied | excluded, depresed | bored, stupid, sorry, alone, happy | good, evil | evilish, sad | bad, sick, empty | incomplete, sleepy"]
+	return ["||feeling moods: mad | stressed | angry, pain, annoyed | bullied | excluded, depressed | bored, stupid, sorry, alone, happy | good, evil | evilish, sad | bad, sick, empty | incomplete, sleepy"]
 		
 @easy_bot_command("shutup")
 def shut_up_lol(message, raw):
@@ -214,11 +214,11 @@ def soccer_combo_match(message, raw):
 	for section in combos:
 		mini_combo.append(section)
 		
-		if len(" | ".join(mini_combo)) > 32:
+		if len(" | ".join([part[0] for part in mini_combo])) > 220:
 			display_combos.append(mini_combo)
 			mini_combo = []
 		
-	return ["Combo:"] + [" | ".join(mini_combo) for mini_combo in display_combos] + ["Total: {} points!".format(reduce(lambda x, y: x + y, [data[1] for data in combos])),]
+	return ["Combo:"] + [" | ".join([part[0] for part in mini_combo]) for mini_combo in display_combos] + ["Total: {} points!".format(reduce(lambda x, y: x + y, [data[1] for data in combos])),]
 	
 @bot_command("copysequences")
 def copysequences(message, connector, index, raw):
@@ -300,3 +300,17 @@ def im_flying(message, raw):
 		return
 		
 	return ["Whee, I'm flyyyiin-- hey, can you please put me back in the ground, frankly honestly?"]
+	
+@easy_bot_command("hug")
+def hug_someone(message, raw):
+	if raw:
+		return
+		
+	try:
+		if not " ".join(message["arguments"][1:]):
+			raise IndexError
+		
+		return ["\x01ACTION hugs {}\x01".format(" ".join(message["arguments"][1:]))]
+		
+	except IndexError:
+		return ["\x01ACTION hugs {}\x01".format(message["nickname"])]

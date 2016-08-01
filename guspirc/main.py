@@ -239,7 +239,7 @@ class IRCConnector(object):
 						continue
 						
 					if compdata == str(auth_numeric):
-						return true
+						return True
 
 		if not waituntilnotice():
 			return False

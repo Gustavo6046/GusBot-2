@@ -11,6 +11,8 @@ def percent_chance(percentage):
 # Sentient Mushes: IRC Warzone
 
 user_data = {}
+turns = []
+turn_index = 0
 
 ammo_data = {
 	"rockets": {
@@ -104,8 +106,20 @@ def smw_search_for_spores(message, raw):
 	else:
 		return ["You found a spore! But wait... why were you looking for spores?", "Do you want to plant champignons or didn't you know the danger of this?"]
 
+@easy_bot_command("smw_turnlist")
+def turn_list(message, raw):
+	global turns
+	
+	if raw:
+		return
+		
+	return ["Turn queue: " + ", ".join(turns)] + (["Current: " + turns[turn_index]] if turns else [])
+		
 @easy_bot_command("smw_join")
 def join_warzone_stats(message, raw):
+	global turn_index
+	global turns
+
 	if raw:
 		return
 
@@ -114,6 +128,8 @@ def join_warzone_stats(message, raw):
 	
 	if user in user_data.keys():
 		return ["You already joined the game! To quit (suicide), use ||smw_quit ."]
+		
+	turns.append(user)
 		
 	user_data[user] = {
 		"host": message["host"],
@@ -157,10 +173,13 @@ def smw_player_list(message, raw):
 			
 	if len(player_list) < 1 or player_list[-1][-1] != mini_player_list[-1]:
 		player_list.append(", ".join(mini_player_list))
-	return ["Players: "] + player_list
+	return ["There are {} players: ".format(len(user_data)) + player_list[0]] + player_list[1:]
 	
 @easy_bot_command("smw_shoot")
 def smw_shoot_at(message, raw):
+	global turn_index
+	global turns
+
 	if raw:
 		return
 	
@@ -188,10 +207,22 @@ def smw_shoot_at(message, raw):
 	realdamage = gun["damage"] + randint(-gun["randomrange"], gun["randomrange"])
 	realfdamage = gun["damagefungus"] + randint(-gun["randomrange"], gun["randomrange"])
 	
-	if user_data[user]["ammo"][weapon_data[gun]["ammotype"]] < 1:
+	if user_data[user]["ammo"][weapon_data[weapon]["ammotype"]] < 1:
 		return ["You are loading empty clips!"]
 		
-	user_data[user]["ammo"][weapon_data[gun]["ammotype"]] -= 1
+	try:
+		if turns[turn_index] != user:
+			return ["Hey! It's not your turn! Stop breaking the queue!"]
+			
+	except IndexError:
+		return ["Nobody's playing! There's no turn to pass!"]
+		
+	turn_index += 1
+	
+	if turn_index >= len(turns):
+		turn_index = 0
+	
+	user_data[user]["ammo"][gun["ammotype"]] -= 1
 	
 	if realdamage < 0:
 		realdamage = 0
@@ -205,27 +236,30 @@ def smw_shoot_at(message, raw):
 	if gun["drainfungushealth"] and user_data[target]["mush"]:
 		user_data[target]["fungushealth"] -= realfdamage
 		
-	if user_data[target]["fungushealth"] < 1:
-		user_data[user]["money"] += 50
-		user_data[target]["mush"] = False
-		return ["{} is not a mush anymore!".format(target)]
-	
 	if user_data[target]["health"] < 1:
 		user_data[user]["money"] += 30
 		user_data.__delitem__(target)
-		return ["{} is now dead! He's out of the game! Rejoin?".format(target)]
+		return ["{} is now dead! He's out of the game! Rejoin?".format(target), "It's now {}'s turn!".format(turns[turn_index])]
+		
+	if user_data[target]["fungushealth"] < 1:
+		user_data[user]["money"] += 50
+		user_data[target]["mush"] = False
+		return ["{} is not a mush anymore!".format(target), "It's now {}'s turn!".format(turns[turn_index])]
 		
 	if user_data[target]["mush"] != user_data[user]["mush"]:
 		user_data[user]["money"] += 5
 		
 	if not user_data[target]["mush"]:
-		return ["Dealt {} damage into the target!".format((real_damage if gun["drainhealth"] else 0))]
+		return ["Dealt {} damage into the target!".format((real_damage if gun["drainhealth"] else 0)), "It's now {}'s turn!".format(turns[turn_index])]
 		
 	else:
-		return ["Dealt {} damage into the target plus {} damage to the fungus!".format((real_damage if gun["drainhealth"] else 0), (realfdamage if gun["drainfungushealth"] else 0))]
+		return ["Dealt {} damage into the target plus {} damage to the fungus!".format((real_damage if gun["drainhealth"] else 0), (realfdamage if gun["drainfungushealth"] else 0)), "It's now {}'s turn!".format(turns[turn_index])]
 		
 @easy_bot_command("smw_extract")
 def smw_extract_spore(message, raw):
+	global turn_index
+	global turns
+
 	if raw:
 		return
 	
@@ -239,12 +273,31 @@ def smw_extract_spore(message, raw):
 		
 	if user_data[user]["spores"] >= 15:
 		return ["Max spores reached! (15)"]
+
+	try:
+		if turns[turn_index] != user:
+			return ["Hey! It's not your turn! Stop breaking the queue!"]
+			
+	except IndexError:
+		return ["Nobody's playing! There's no turn to pass!"]
+		
+	turn_index += 1
+	
+	print turn_index
+	
+	if turn_index >= len(turns):
+		turn_index = 0
+		
+	print turn_index
 		
 	user_data[user]["spores"] += 1
-	return ["Extracted a spore! (now with {})".format(user_data[user]["spores"])]
+	return ["Extracted a spore! (now with {})".format(user_data[user]["spores"]), "It's now {}'s turn!".format(turns[turn_index])]
 	
 @easy_bot_command("smw_spike")
 def spike_user_with_spore(message, raw):
+	global turn_index
+	global turns
+
 	if raw:
 		return
 		
@@ -265,7 +318,19 @@ def spike_user_with_spore(message, raw):
 		return ["He's already one!"]
 		
 	if user_data[user]["spores"] < 1:
-		return ["Sorry, out of spores."]
+		return ["You're out of spores!"]
+		
+	try:
+		if turns[turn_index] != user:
+			return ["Hey! It's not your turn! Stop breaking the queue!"]
+			
+	except IndexError:
+		return ["Nobody's playing! There's no turn to pass!"]
+		
+	turn_index += 1
+	
+	if turn_index >= len(turns):
+		turn_index = 0
 		
 	user_data[user]["spores"] -= 1
 	user_data[target]["immune"] -= 1
@@ -273,12 +338,48 @@ def spike_user_with_spore(message, raw):
 	if user_data[target]["immune"] < 1:
 		user_data[target]["fungushealth"] = 80
 		user_data[target]["mush"] = True
-		return ["Infection succesful! Now {} is a mush!".format(target)]
+		return ["Infection succesful! Now {} is a mush!".format(target), "It's now {}'s turn!".format(turns[turn_index])]
 	
-	return ["Spiking succesful! But, he will take more than that; his immune system is now already {} though!".format(user_data[target]["immune"])]
+	return ["Spiking succesful! But, he will take more than that; his immune system is now already {} though!".format(user_data[target]["immune"]), "It's now {}'s turn!".format(turns[turn_index])]
+	
+@easy_bot_command("smw_turn")
+def smw_whos_turn(message, raw):
+	if raw:
+		return
+		
+	if len(turns) < 1:
+		return "No one's turn! Who's playing?"
+		
+	return "It's now {}'s turn!".format(turns[turn_index])
+	
+@easy_bot_command("smw_pass")
+def smw_pass_turn(message, raw):
+	global turn_index
+
+	if raw:
+		return
+		
+	user = message["nickname"]
+		
+	try:
+		if turns[turn_index] != user:
+			return ["Hey! It's not your turn! Stop breaking the queue!"]
+			
+	except IndexError:
+		return ["Nobody's playing! There's no turn to pass!"]
+		
+	turn_index += 1
+	
+	if turn_index >= len(turns):
+		turn_index = 0
+		
+	return "Turn passed! It's now {}'s turn!".format(turns[turn_index])
 	
 @easy_bot_command("smw_quit")
 def smw_quit(message, raw):
+	global turns
+	global turn_index
+
 	if raw:
 		return
 		
@@ -288,6 +389,16 @@ def smw_quit(message, raw):
 		return ["You are not joined either!"]
 		
 	user_data.__delitem__(user)
+	
+	if turns[turn_index] == user:
+		turn_index += 1
+		
+		if turn_index >= len(turns):
+			turn_index = 0
+	
+	for i, x in enumerate(turns):
+		if x == user:
+			turns.pop(i)
 	
 	return ["Suicide succesful! :3"]
 	
@@ -472,3 +583,60 @@ def reset_smw_match(message, raw):
 	user_data = {}
 		
 	return ["Reset with success!", "...Anyone gonna join now?"]
+	
+@easy_bot_command("smw_cost")
+def get_smw_gun_cost(message, raw):
+	if raw:
+		return
+		
+	object = " ".join(message["arguments"][1:])
+		
+	if object in ammo_data.keys():
+		return ["That ammo costs {}.".format(ammo_data[object]["cost"])]
+		
+	elif object in weapon_data.keys():
+		return ["That weapon costs {}.".format(weapon_data[object]["cost"])]
+		
+	elif object in user_data.keys():
+		return ["A friendship is for free! :D <3"]
+		
+	else:
+		return ["What's that?"]
+		
+@easy_bot_command("smw_kick", True)
+def kick_smw_player(message, raw):
+	global turn_index
+	global turns
+
+	if raw:
+		return
+		
+	try:
+		user = " ".join(message["arguments"][1:])
+	
+	except IndexError:
+		return ["Syntax: smw_kick <user to kick from game>"]
+	
+	if not user in user_data.keys():
+		return ["He's not joined either!"]
+		
+	user_data.__delitem__(user)
+	
+	if turns[turn_index] == user:
+		turn_index += 1
+		
+		if turn_index >= len(turns):
+			turn_index = 0
+	
+	for i, x in enumerate(turns):
+		if x == user:
+			turns.pop(i)
+			
+	return ["User kicked succesfully!"]
+	
+@easy_bot_command("smw_help")
+def smw_help(message, raw):
+	if raw:
+		return
+		
+	return ["WARZONE HELP", "Join using smw_join.", "If you are mush, use smw_extract and smw_spike. Or else, buy some good gun using smw_buygun and smw_buyammo. (List them and ammo using smw_listweaponry and smw_listammotypes!)", "Use smw_about for etc stuff or use smw_hide for a consolation message!", "Use smw_cost to get cost of stuff. Always remember: friendship is for FREE! <3"]

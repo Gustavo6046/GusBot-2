@@ -74,6 +74,17 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 						print "Executing command!"
 						result = func(message, False)
 						
+					elif (
+							not (not admin_command or message["nickname"] == master)
+					) and (
+							not dont_parse_if_prefix or not message["message"].startswith(command_prefix)
+					) and not (
+							message["nickname"] == message["channel"] == get_bot_nickname(connector, index)
+					) and (
+							not dont_parse_if_prefix and message["arguments"][0].lower() == (command_prefix + command_name_to_use).lower()
+					):
+						result = "{}: Permission Denied!".format(message["nickname"])
+						
 					if not (not dont_parse_if_prefix or not message["message"].startswith(command_prefix)):
 						print "Error: prefix found!"
 						return

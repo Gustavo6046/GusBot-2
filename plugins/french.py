@@ -20,7 +20,18 @@ def translate_to_french(message, raw):
 	if raw:
 		return
 		
-	return ["Translated: " + " ".join([french_db[word] for word in message["arguments"][1:]])]
+	french_words = []
+	untranslatable_words = []
+		
+	for word in message["arguments"][1:]:
+		try:
+			french_words.append(french_db[word])
+			
+		except KeyError:
+			french_words.append(word)
+			untranslatable_words.append(word)
+		
+	return ["Translated: " + " ".join(french_words)] + (["Words without findable translation: " + " ".join(untranslatable_words)] if untranslatable_words else [])
 	
 @easy_bot_command("savefrench")
 def save_french_db(message, raw):
@@ -42,3 +53,5 @@ def load_frendh_db(message, raw):
 		return ["It's loadfrench <filename (without .json)>"]
 		
 	french_db.update(json.load(open(" ".join(message["arguments"][1:]) + ".json")))
+	
+	return "Loaded succesfully!"
