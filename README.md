@@ -44,10 +44,9 @@ It usually looks somewhat like this:
 
 This is an simple example: (it'll probably suffice for now)
 
-    @easy_bot_command()
+    @easy_bot_command("commandname")
     def my_commands_name(message, raw):
-        if not raw:
-            return ["Hello World!", "Second message.", "Third message! You said: " + " ".join(message["arguments"][1:])]
+        if raw:
+            return
             
-        else:
-            return []
+        return ["Hello World!", "Second message.", "Third message! You said: " + " ".join(message["arguments"][1:])]
