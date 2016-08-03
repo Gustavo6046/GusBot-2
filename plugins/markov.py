@@ -186,6 +186,9 @@ def get_markov(message, raw):
 	except KeyError:
 		pass
 
+	if len(markov_dict) < 1:
+		return "\x035\x02Error\x02\x03: no Markov data!"
+		
 	# Get the string!
 	if len(message["arguments"]) < 2:
 		x = choice(markov_dict.keys())

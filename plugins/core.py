@@ -20,35 +20,26 @@ def hello_there(message, raw):
 	else:
 		return []
 		
-@easy_bot_command("commands")
-def help_list(message, raw):
-	if not raw:
-		split_num = 0
+@bot_command("commands")
+def help_list(message, connector, index, raw):
+	if raw:
+		return
+	
+	def send_msg(mesg):
+		print mesg
+		connector.send_message(index, message["nickname"], mesg)
 		
-		iter_num = 0
-		command_list = []
-		old_command_list = []
-		current_commands = []
+	def send_msgs(lst):
+		for item in lst:
+			send_msg(item)
 		
-		for plugin, list in plugincon.get_command_names().items():
-			for command in list:
-				old_command_list.append(command.decode("utf-8"))
-				
-		for command in old_command_list:
-			iter_num += 1
-			current_commands.append(command)
-			
-			if iter_num % 30 == 0:
-				command_list.append(current_commands)
-				current_commands = []
+	def msg(mesg):
+		connector.send_message(index, get_message_target(connector, message, index), mesg)
 		
-		if current_commands[-1] != command_list[-1][-1]:
-			command_list.append(current_commands)
+	send_msgs(["\'{}\' plugin has the following commands -> ".format(plugin.decode("utf-8"))	 + ", ".join([x.decode("utf-8") for x in command_list]) for plugin, command_list in plugincon.get_command_names().items()])
 		
-		return ["Command list below:"] + [" ".join(mcl) for mcl in command_list]
-		
-	else:
-		return []
+	msg("Sent you help via PM.")
+	return	
 		
 @bot_command("join", True)
 def join_channel(message, connector, index, raw):

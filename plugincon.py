@@ -1,3 +1,4 @@
+import imp
 import glob
 import importlib
 import os
@@ -24,6 +25,11 @@ def fetch_name(filepath):
     return os.path.splitext(ntpath.basename(filepath))[0]
 	
 def reload_all_plugins():
+	global commands
+	global command_names
+	global current_plugin
+	global plugins
+
 	print "Reloading plugins..."
 	commands = []
 	command_names = {}
@@ -37,11 +43,19 @@ def reload_all_plugins():
 		print current_plugin
 		plugins[plugin] = importlib.import_module("plugins." + plugin)
 		
+	commands = []
+	command_names = {}
+	
+	for plugin, module in plugins.items():
+		current_plugin = plugin
+	
+		imp.reload(module)
+		
 	print "Plugins reloaded! ({})".format(command_names)
 		
 	return plugin_list
 
-def easy_bot_command(command_name=None, admin_command=False, all_messages=False, dont_parse_if_prefix=False):
+def easy_bot_command(command_name=None, admin_command=False, all_messages=False, dont_parse_if_prefix=False, dont_show_in_list=False):
 	def real_decorator(func):
 		global commands
 		global command_names
@@ -131,7 +145,7 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 					
 		commands.append(wrapper)
 		
-		if not dont_parse_if_prefix and not all_messages:
+		if (not dont_parse_if_prefix and not all_messages) or dont_show_in_list:
 			try:
 				command_names[current_plugin].append(command_name)
 				
@@ -143,7 +157,7 @@ def easy_bot_command(command_name=None, admin_command=False, all_messages=False,
 	return real_decorator
 
 
-def bot_command(command_name=None, admin_command=False, all_messages=False, dont_parse_if_prefix=False):
+def bot_command(command_name=None, admin_command=False, all_messages=False, dont_parse_if_prefix=False, dont_show_in_list=False):
 	global current_plugin
 
 	def real_decorator(func):
@@ -217,7 +231,7 @@ def bot_command(command_name=None, admin_command=False, all_messages=False, dont
 
 		commands.append(wrapper)
 		
-		if not dont_parse_if_prefix and not all_messages:
+		if (not dont_parse_if_prefix and not all_messages) or dont_show_in_list:
 			try:
 				command_names[current_plugin].append(command_name)
 				

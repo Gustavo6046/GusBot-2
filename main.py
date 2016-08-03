@@ -53,7 +53,7 @@ def server_loop(index):
 					print "Error parsing command! ({}: {})".format(plugin_error.__class__.__name__, plugin_error)
 					
 					if parse_message(message)["type"] == "PRIVMSG":
-						connector.send_message(index, parse_message(message)["channel"], "Error parsing command! ({}: {})".format(plugin_error.__class__.__name__, plugin_error))
+						connector.send_message(index, parse_message(message)["nickname"], "Error parsing command! ({}: {})".format(plugin_error.__class__.__name__, plugin_error))
 						
 					if debug:
 						raise

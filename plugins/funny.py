@@ -314,3 +314,38 @@ def hug_someone(message, raw):
 		
 	except IndexError:
 		return ["\x01ACTION hugs {}\x01".format(message["nickname"])]
+		
+@easy_bot_command("test")
+def testing_what(message, raw):
+	if raw:
+		return
+		
+	return ["You are testing what? Oh, me ?!? Wait... I don't need tests, I am perfect! *lets a pork loose* Thinking well, maybe..."]
+	
+@easy_bot_command("dance")
+def ddr_sucks(message, raw):
+	if raw:
+		return
+		
+	return choice(["I won't insult dancing games just because I'm bad at it. But because it sucks!", "Teach me to dance!"])
+	
+@easy_bot_command("language")
+def languages(message, raw):
+	if raw:
+		return
+	
+	return ["Not that meme, I didn't even cuss-- oh, you mean language list? My owner knows Portuguese, but I speak English for the majority of English-speaking users out there."]
+	
+@easy_bot_command("quote")
+def quotes(message, raw):
+	if raw:
+		return
+		
+	return choice(open("quotes.txt").readlines())
+	
+@easy_bot_command("bread")
+def bread_y_butter(message, raw):
+	if raw:
+		return
+		
+	return "& butter till ur fat the end"
