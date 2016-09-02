@@ -1,4 +1,3 @@
-import time
 import socket as skt
 
 from Queue import Empty
@@ -97,6 +96,7 @@ class IRCConnector(object):
 							  has_account=False,
 							  channels=None,
 							  auth_numeric=001,
+							  use_ssl=True,
 							  master=""
 							  ):
 		"""Adds a IRC connection.
@@ -179,7 +179,11 @@ class IRCConnector(object):
 		#
 		# log(self.logfile, u"Check for duplicates done!"
 
-		sock = ssl.wrap_socket(socket(AF_INET, SOCK_STREAM))
+		if use_ssl:
+			sock = ssl.wrap_socket(socket(AF_INET, SOCK_STREAM))
+			
+		else:
+			sock = socket(AF_INET, SOCK_STREAM)
 
 		log(self.logfile, u"Socket making done!")
 
@@ -213,7 +217,7 @@ class IRCConnector(object):
 				raw_received_message = sock.recv(1024).decode('utf-8')
 
 				if raw_received_message == u"":
-					time.sleep(0.2)
+					sleep(0.2)
 					continue
 
 				if not raw_received_message.endswith(u"\r\n"):
@@ -228,15 +232,23 @@ class IRCConnector(object):
 				y.pop(-1)
 
 				for z in y:
-
 					log(self.logfile, z.encode("utf-8"))
 
 					try:
 						compdata = z.split(" ")[1]
+						errordata = z.split(" ")[0]
 						
 					except IndexError:
-						time.sleep(0.2)
+						sleep(0.2)
 						continue
+						
+					if errordata == "PING":
+						sock.sendall("PONG :{}\r\n".format(" ".join(z.split(":")[1:])))
+						sleep(0.1)
+						continue
+						
+					if errordata == "ERROR":
+						return False
 						
 					if compdata == str(auth_numeric):
 						return True
@@ -267,15 +279,14 @@ class IRCConnector(object):
 
 		executed_time = time() - start_time
 
-		sleep(10 - executed_time if executed_time < 10 else 2)
+		sock.sendall("PASS {0:s}:{1:s}\r\n".format(account_name.encode('utf-8'), password.encode('utf-8')))
+		sock.sendall("PRIVMSG Q@CServe.quakenet.org :AUTH {} {}\r\n".format(account_name.encode('utf-8'), password.encode('utf-8')))
+		sock.sendall("PRIVMSG NickServ IDENTIFY {0:s} {1:s}\r\n".format(account_name.encode('utf-8'), password.encode('utf-8')))
+		
+		sleep(3 - executed_time if executed_time < 3 else 3)
 
 		for x in channels:
 			sock.sendall("JOIN %s\r\n" % x.encode('utf-8'))
-
-		if not has_account:
-			sock.sendall("PASS {0:s}:{1:s}\r\n".format(account_name.encode('utf-8'), password.encode('utf-8')))
-		sock.sendall(
-			"PRIVMSG NickServ IDENTIFY {0:s} {1:s}\r\n".format(account_name.encode('utf-8'), password.encode('utf-8')))
 
 		log(self.logfile, u"Joined channels!")
 
@@ -317,12 +328,17 @@ class IRCConnector(object):
 
 				try:
 					w = x[0].recv(4096).decode('utf-8')
+					
 				except error:
 					if len(self.connections[index][2]) > 0:
 						return
+						
 					else:
 						sleep(0.1)
 						continue
+						
+				except UnicodeDecodeError:
+					return
 
 				if not (w.endswith(u"\n") or w.endswith(u"\r") or
 							w.endswith(u"\r\n")):
@@ -363,7 +379,7 @@ class IRCConnector(object):
 		log(self.logfile, u"Sending OQ messages!")
 
 		worked = False
-
+		
 		try:
 			v = self.connections[index][2].get(False).decode('utf-8')
 			
@@ -374,7 +390,7 @@ class IRCConnector(object):
 			worked = True
 			log(self.logfile, v)
 			self.connections[index][0].sendall(v.encode('utf-8'))
-			sleep(0.5)
+			sleep(0.8)
 
 		except Empty:
 			if not worked:
@@ -382,7 +398,7 @@ class IRCConnector(object):
 				
 			else:
 				log(self.logfile, u"Sent all OQ messages!")
-				sleep(0.5)
+				sleep(0.4)
 				
 			pass
 
@@ -414,6 +430,7 @@ class IRCConnector(object):
 		try:
 			self.connections[connection_index][2].put_nowait(
 				"PRIVMSG {0:s} :{1:s}\r\n".format(target.encode('utf-8'), message.encode('utf-8')))
+				
 		except UnicodeDecodeError:
 			self.connections[connection_index][2].put_nowait("PRIVMSG {0:s} :{1:s}\r\n".format(target, message))
 
@@ -422,7 +439,7 @@ class IRCConnector(object):
 			connection_index=0,
 			message="a GusPirc bot: The simplest Python low-level IRC interface"
 	):
-		"""D==connects from the server in the index specified.
+		"""Disconnects from the server in the index specified.
 
 		- connection_index: the index of the connection. Usually in the order
 		you called add_connection_socket().
@@ -453,7 +470,7 @@ class IRCConnector(object):
 
 		- msg: the notice's message to send."""
 
-		self.send_command(index, "NOTICE %s :%s" % (noticetarget.encode('utf-8'), msg.encode('utf-8')))
+		self.send_command(index, "NOTICE %s :%s" % (noticetarget.encode('utf-8'), msg))
 
 	def socket_index_by_address(self, address, port=6667):
 		"""Returns the index of the IRC connection that is connected to
@@ -463,7 +480,7 @@ class IRCConnector(object):
 				if tuple(x[0].getsockname()[:2]) == [address, port]:
 					return self.connections.index(x)
 		return -1
-
+		
 	def receive_all_messages(self, index=0):
 		"""Returns all the messages from the queue in the
 		connection.

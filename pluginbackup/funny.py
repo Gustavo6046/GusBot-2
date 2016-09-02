@@ -1,20 +1,8 @@
 import json
 
 from random import choice, sample, randint
-from plugincon import bot_command, easy_bot_command, get_message_target, get_bot_nickname, reload_all_plugins, get_command_names
+from plugincon import bot_command, easy_bot_command, get_message_target, get_bot_nickname, reload_all_plugins
 
-
-def flatten(iterable):
-   out = []
-   
-   for i in iterable:
-      if hasattr(i,'__iter__'):
-         out.extend(flatten(i))
-		 
-      else:
-         out.append(i)
-		 
-   return out
 
 def percent_chance(percentage):
 	trandom = randint(0, 100)
@@ -363,21 +351,8 @@ def languages(message, raw):
 def quotes(message, raw):
 	if raw:
 		return
-	
-	try:
-		quote = open("quotes.txt").readlines()[int(message["arguments"][1]) - 1]
 		
-	except (ValueError, IndexError):
-		quote = choice(open("quotes.txt").readlines())
-	
-	return "\x02\x035[{}]\x02\x0F {}".format(open("quotes.txt").readlines().index(quote) + 1, quote)
-
-@easy_bot_command("countquotes")
-def count_quotes(message, raw):
-	if raw:
-		return
-	
-	return "There are \x02\x0305{}\x02\x0F quotes available!".format(len(open("quotes.txt").read().split("\n")))
+	return choice(open("quotes.txt").readlines())
 	
 @easy_bot_command("addquote")
 def add_a_quote(message, raw):
@@ -432,7 +407,7 @@ def ping_someone(message, raw):
 		return
 		
 	if len(message["arguments"]) < 2:
-		return "PHOOOIIIING! BING BONG?!?"
+		return "POOOIIIING! BING BONG?!?"
 		
 	return [" ".join(repeat(mess_with_word(message["arguments"][1]), 3, 2)), " ".join(repeat(mess_with_word(message["arguments"][1]), 3, 2)), " ".join(repeat(mess_with_word(message["arguments"][1]), 3, 2))]
 	
@@ -455,95 +430,10 @@ def scramble_word_command(message, raw):
 			scrambling = randint(2, 3)
 	
 	return " ".join([mess_with_word(word)(scrambling) for word in message["arguments"][1:-1]]) + "!"
-
-@easy_bot_command("school")
-def learning_wow(message, raw):
+	
+@easy_bot_command("caligula")
+def what_is_caligula(message, raw):
 	if raw:
 		return
 		
-	return ["What will we learn today, Teacher?", "\x01ACTION smiles and sits down in a chair\x01"]
-	
-@easy_bot_command("factabout")
-def fact_about(message, raw):
-	if raw:
-		return
-		
-	try:
-		return ["Fun fact about '{}': {}".format(message["arguments"][1], choice(json.load(open("funfacts.json"))[message["arguments"][1]]))]
-		
-	except IndexError:
-		return "Syntax: factabout <topic>"
-		
-	except (IOError, ValueError):
-		return "No facts available :("
-		
-@easy_bot_command("randomfact")
-def fact_about(message, raw):
-	if raw:
-		return
-		
-	try:
-		this = choice(json.load(open("funfacts.json")).keys())
-		return ["Fun fact about '{}': {}".format(this, choice(json.load(open("funfacts.json"))[this]))]
-		
-	except IndexError:
-		return "Syntax: factabout <topic>"
-		
-	except (IOError, ValueError):
-		return "No facts available :("
-		
-@easy_bot_command("listfacttopics")
-def list_facts(message, raw):
-	if raw:
-		return
-		
-	try:
-		return ["Following topics are available for ||factabout <topic> : " + ", ".join(json.load(open("funfacts.json")).keys())]
-		
-	except (IOError, ValueError):
-		return "No facts available :("
-		
-@easy_bot_command("addfact")
-def add_fact_about(message, raw):
-	if raw:
-		return
-		
-	if len(message["arguments"]) < 3:
-		return "Syntax: addfact <topic> <fact>"
-	
-	try:
-		fun_facts = json.load(open("funfacts.json"))
-		
-	except (IOError, ValueError):
-		fun_facts = {}
-	
-	try:
-		fun_facts[message["arguments"][1]].append(" ".join(message["arguments"][2:]))
-		
-	except KeyError:
-		fun_facts[message["arguments"][1]] = [" ".join(message["arguments"][2:])]
-	
-	open("funfacts.json", "w").write(json.dumps(fun_facts, sort_keys=True, indent=4, separators=(',', ': ')))
-	
-	return "Added fact succesfully!"
-	
-@easy_bot_command("sleepy")
-def sleepy(message, raw):
-	if raw:
-		return
-		
-	return "*yawn* I guess.................zZZzzzzzzzZZZZZZZZZZ"
-	
-@easy_bot_command("countcommands")
-def count_commands(message, raw):
-	if raw:
-		return
-		
-	return "Number of commands: {}".format(len(flatten(get_command_names().values())))
-	
-@easy_bot_command("dracula")
-def count_dracula(message, raw):
-	if raw:
-		return
-
-	return "I know, vampires might be considered infectious... but fungus aren't this evil! :P"
+	return "What is a caligulensiahskuashi--er caligula?"

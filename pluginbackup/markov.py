@@ -300,18 +300,9 @@ def get_markov(message, raw):
 	# Checks.
 	try:
 		markov_dict.__delitem__("")
-		markov_dict.__delitem__(" ")
 		
 	except KeyError:
 		pass
-		
-	for i, mkv in markov_dict.items():
-		try:
-			markov_dict[i].remove(" ")
-			markov_dict[i].remove("")
-			
-		except KeyError:
-			continue
 
 	if len(markov_dict) < 1:
 		return "\x035\x02Error\x02\x03: no Markov data!"
@@ -322,18 +313,17 @@ def get_markov(message, raw):
 		words = [x]
 		
 	else:
-		words = [x.lower() for x in message["arguments"][1:]]
+		words = message["arguments"][1:]
 		x = words[0]
 			
 	level = 0
-	
-	result = x
+	result = "{0}: ".format(message["nickname"]) + x
 	
 	print x
 	
 	while level < len(words) - 1:
 		if not words[level + 1] in markov_dict[x]:
-			return ["{}: {}".format(message["nickname"], result)]
+			return [result]
 			
 		print x
 			
@@ -342,28 +332,25 @@ def get_markov(message, raw):
 		result += " " + x
 		
 	while x in markov_dict.keys():
-		try:
-			x = sample(markov_dict[x], 1)[0]
-			
-		except ValueError:
-			break
+		x = sample(markov_dict[x], 1)[0]
 		
 		print x
 		
 		result += " " + x
 		
-		if len(result) > 750:
+		level += 1
+		
+		if level > 70:
 			break
 			
 	for cuss in markov_filter:
+		print "Filtering {cuss} from {string}!".format(cuss=cuss, string=result)
 		result = result.replace(cuss, "*")
-		
-	result = "{0}: {1}".format(message["nickname"], result)
 			
 	return [result]
 	
 					
-@easy_bot_command("savemarkov", True)
+@easy_bot_command("savemarkov")
 def save_markov_json(message, raw):
 	global markov_dict
 	
@@ -386,7 +373,7 @@ def save_markov_json(message, raw):
 	else:
 		return []
 		
-@easy_bot_command("loadmarkovfilter", True)
+@easy_bot_command("loadmarkovfilter")
 def load_markov_filter(message, raw):
 	global markov_filter
 
@@ -400,7 +387,7 @@ def load_markov_filter(message, raw):
 		
 	return ["Blacklist updated succesfully!"]
 	
-@easy_bot_command("savemarkovfilter", True)
+@easy_bot_command("savemarkovfilter")
 def save_markov_filter(message, raw):
 	global markov_filter
 	
@@ -414,7 +401,7 @@ def save_markov_filter(message, raw):
 		
 	return ["Blacklist updated succesfully!"]
 		
-@easy_bot_command("loadmarkov", True)
+@easy_bot_command("loadmarkov")
 def load_markov_json(message, raw):
 	global markov_dict
 	
@@ -441,7 +428,7 @@ def list_cusses(message, raw):
 		
 	return "Cusses blacklisted: " + ", ".join(markov_filter)
 		
-@easy_bot_command("addfiltermarkov", True)
+@easy_bot_command("addfiltermarkov")
 def filter_cusses(message, raw):
 	if raw:
 		return
@@ -455,7 +442,7 @@ def filter_cusses(message, raw):
 	except IndexError:
 		return ["Syntax: addfiltermarkov <list of cusses or blacklisted words>"]
 		
-@easy_bot_command("removefiltermarkov", True)
+@easy_bot_command("removefiltermarkov")
 def unfilter_cusses(message, raw):
 	if raw:
 		return
@@ -572,43 +559,6 @@ def parse_web_markov(message, raw):
 		messages.append("{}: Success reading Markov from (some) website(s)!".format(message["nickname"]))
 			
 	return messages + warnings
-		
-@easy_bot_command("clearmarkovfilter", True)
-def clear_filter(message, raw):
-	global markov_filter
-
-	if raw:
-		return
-		
-	markov_filter = []
-	return "Success clearing Markov filter!"
-		
-@easy_bot_command("purgemarkov", True)
-def purge_word_from_markov(message, raw):
-	global markov_dict
-
-	if raw:
-		return
-	
-	if len(message["arguments"]) < 2:
-		return "Syntax: purgemarkov <list of words to purge from Markov>"
-		
-	for word in message["arguments"][1:]:
-		for kw in markov_dict.keys():
-			if kw == word:
-				markov_dict.__delitem__(kw)
-				
-			try:
-				if word in markov_dict[kw]:
-					markov_dict[kw] = [mk for mk in markov_dict[kw] if mk != word]
-					
-					if markov_dict[kw] == []:
-						markov_dict.__delitem__(kw)
-						
-			except KeyError:
-				pass
-					
-	return "Words purged from Markov succesfully!"
 		
 @easy_bot_command("parsewebmarkovcrawl", True)
 def get_web_markov_crawling(message, raw):
