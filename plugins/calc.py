@@ -10,11 +10,9 @@ def get_pi(message, connector, index, raw):
 def sine_command(message, raw):
     if not raw:
         try:
-            print "Sending decimal sine..."
-			
             try:
                 return ["{}: {}".format(message["nickname"], str(math.sin(float(message["arguments"][1]))))]
-				
+
             except ValueError:
                 return [index,get_message_target(connector, message, index), message["nickname"] + ": Invalid literal!"]
 
@@ -32,7 +30,7 @@ def cosine_command(message, raw):
             print "Sending decimal cosine..."
             try:
                 return [str(math.cos(float(message["arguments"][1])))]
-				
+
             except ValueError:
                 return [index, get_message_target(connector, message, index), message["nickname"] + ": Invalid literal!"]
 

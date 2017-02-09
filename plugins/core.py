@@ -1,9 +1,102 @@
 import plugincon
 import guspirc
+import subprocess
+import StringIO
+import operator
+import json
+import main
 
 from importlib import import_module
 from plugincon import bot_command, easy_bot_command, get_message_target, get_bot_nickname, reload_all_plugins
 
+@easy_bot_command("addserv", True)
+def add_server(message, raw):
+	if raw:
+		return
+
+	try:
+		main.connector.add_connection_socket(message["arguments"][1], message["arguments"][2], message["arguments"][3], "A GusPIRC Bot", message["arguments"][4], message["arguments"][5], "email@address.com", "GusBot", True, message["arguments"][6:], use_ssl=False, master=main.master)
+
+	except IndexError:
+		return "Syntax: addserv <server address> <port> <ident> <nickname> <password> <autojoin channel [channel [...]]>"
+
+	# server,
+	# port=6697,
+	# ident="GusPIRC",
+	# real_name="A GusPIRC Bot",
+	# nickname="GusPIRC Bot",
+	# password="",
+	# email="email@address.com",
+	# account_name="",
+	# has_account=False,
+	# channels=None,
+	# auth_numeric=267,
+	# use_ssl=True,
+	# master=""
+
+	return "Server added succesfully!"
+
+@easy_bot_command("shell", True)
+def shell_exec(message, raw):
+	if raw:
+		return
+
+	if len(message["arguments"]) < 2:
+		return "Syntax: shell <command-line>"
+
+	print "Executing: \'{}\'".format(" ".join(message["arguments"][1:]))
+
+	# Calling shell and processing STDOUT
+	sh = subprocess.Popen(message["arguments"][1:], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, shell=True)
+	input = our_stdin.getvalue()
+	print "->> " + input
+	output, err = sh.communicate(input)
+	out = map(lambda x: x if x != "" else " ", output.split("\n"))
+
+	print our_stdin.__dict__
+	our_stdin.flush()
+
+	try:
+		return map(lambda x: x.strip("\r").encode("utf-8"), out)
+
+	except UnicodeDecodeError:
+		return map(lambda x: x.strip("\r"), out)
+
+current_shell = None
+
+@easy_bot_command("sh_init", True)
+def start_shell_context(message, raw):
+	if raw:
+		return
+
+	if len(message["arguments"]) < 2:
+		return "@Syntax: sh_init <command-line>"
+
+	print "Executing: \'{}\'".format(" ".join(message["arguments"][1:]))
+	current_shell = subprocess.Popen(message["arguments"][1:], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, shell=True)
+
+	return iter(current_shell.stdout.readline, "")
+
+@easy_bot_command("sh_feed", True)
+def feed_shell_context(message, raw):
+	if raw:
+		return
+
+	if len(message["arguments"]) < 2:
+		return "@Syntax: sh_feed <stdin>"
+
+	current_shell.stdin.write(" ".join(message["arguments"][1:]) + "\n")
+
+	return iter(current_shell.stdout.readline, "")
+
+@easy_bot_command("sh_stop", True)
+def stop_shell_context(message, raw):
+	if raw:
+		return
+
+	current_shell.terminate()
+
+	return "@Shell program terminated succesfully!"
 
 @bot_command("flushq", True)
 def flush_out_queue(message, connector, index, raw):
@@ -19,37 +112,35 @@ def evaluate_expression(message, raw):
 	if raw:
 		return
 
-	return "Result | " + str(eval(message["body"])).encode("utf-8")
-	
+	r = u"Result | {}".format(unicode(eval(message["body"]))).encode("utf-8")
+	print r
+	return r
+
 @easy_bot_command("exec", True)
 def evaluate_statement(message, raw):
 	if raw:
 		return
 
 	exec(" ".join(message["arguments"][1:]))
-		
+
 	return "Statement executed succesfully!"
 
-@bot_command("commands")
-def help_list(message, connector, index, raw):
+@easy_bot_command("plugins")
+def plugin_cmd_list(message, raw):
 	if raw:
 		return
 
-	def send_msg(mesg):
-		print mesg
-		connector.send_message(index, message["nickname"], mesg.encode("utf-8"))
+	return "Plugins available: " + ", ".join(plugincon.plugins.keys())
 
-	def send_notices(lst):
-		for item in lst:
-			connector.send_command(index, ("NOTICE {} :{}".format(message["nickname"], item.encode("utf-8"))).decode("utf-8"))
+@easy_bot_command("list")
+def plugin_cmd_list(message, raw):
+	if raw:
+		return
 
-	def msg(mesg):
-		connector.send_message(index, get_message_target(connector, message, index), mesg.encode("utf-8"))
+	if len(message["arguments"]) < 2:
+		return ["Syntax: ||list <plugin name>", "For a list of plugins use ||plugins"]
 
-	send_notices(["\'{}\' plugin has the following commands -> ".format(plugin.decode("utf-8"))	 + ", ".join([x.decode("utf-8") for x in command_list]) for plugin, command_list in plugincon.get_command_names().items()])
-
-	msg("Sent you help via notice.")
-	return
+	return "Commands in plugin {}: {}".format(message["arguments"][1], ", ".join([x.encode("utf-8") for x in plugincon.command_names[message["arguments"][1]]]))
 
 @bot_command("join", True)
 def join_channel(message, connector, index, raw):
@@ -110,8 +201,8 @@ def add_exempt(message, raw):
 	if raw:
 		return
 
-	if len(message["arguments"]) < 2:
-		return ["Syntax: addexempt <list of hostmasks>"]
+		if len(message["arguments"]) < 2:
+			return ["Syntax: addexempt <list of hostmasks>"]
 
 	for hostmask in message["arguments"][1:]:
 		plugincon.add_exempt(hostmask)
@@ -181,3 +272,38 @@ def invite_user(message, connector, index, raw):
 		return
 
 	connector.send_command(index, "INVITE {} {}".format(message["arguments"][1], message["channel"]))
+
+@easy_bot_command("num_commands")
+def number_of_commands(message, raw):
+	if raw:
+		return
+
+	return "Number of Commands: {}".format(len(plugincon.get_commands()))
+
+@easy_bot_command("addadmin", True)
+def add_admin(message, raw):
+	if raw:
+		return
+
+	r = json.dumps(json.load(open("admins.json")) + [message["body"]])
+	open("admins.json", "w").write(r)
+
+	return "Admin added succesfully!"
+
+@easy_bot_command("remadmin", True)
+def add_admin(message, raw):
+	if raw:
+		return
+
+	r = json.load(open("admins.json"))
+	r.remove(message["body"])
+	open("admins.json", "w").write(json.dumps(r))
+
+	return "Admin removed succesfully!"
+
+@easy_bot_command("adminlist")
+def list_admins(message, raw):
+	if raw:
+		return
+
+	return "Admins (other than master): " + ", ".join("\'{}\'".format(a) for a in json.load(open("admins.json")))

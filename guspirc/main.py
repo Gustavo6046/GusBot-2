@@ -45,19 +45,19 @@ def log(logfile, msg):
 	Reminder: msg must be a Unicode string!"""
 	try:
 		msg = msg.encode('utf-8')
-		
-	except (UnicodeDecodeError, UnicodeEncodeError):
-		pass
-		
-	x = "[{0}]: {1}".format(strftime(u"%A %d - %X : GMT %Z"), msg)
-	
-	print x
-	
-	try:
-		logfile.write(x.decode("utf-8") + "\n".decode("utf-8"))
 
 	except (UnicodeDecodeError, UnicodeEncodeError):
-		logfile.write(x)
+		pass
+
+	x = "[{0}]: {1}".format(strftime(u"%A %d - %X"), msg)
+
+	print x
+
+	try:
+		logfile.write(x.decode("utf-8") + u"\n")
+
+	except UnicodeEncodeError:
+		logfile.write(x + u"\n")
 
 class IRCConnector(object):
 	"""The main connector with the IRC world!
@@ -95,7 +95,7 @@ class IRCConnector(object):
 							  account_name="",
 							  has_account=False,
 							  channels=None,
-							  auth_numeric=001,
+							  auth_numeric=267,
 							  use_ssl=True,
 							  master=""
 							  ):
@@ -159,8 +159,7 @@ class IRCConnector(object):
 
 		- auth_numeric: the numeric after which the bot can auth.
 
-		Defaults to 001, but it's a highly unrecommended numeric because it may result in
-		the both authing as soon as it succesfully connects to the network.
+		Defaults to 267.
 
 		- master: the name of the admin of the bot. ToDo: add tuple instead of string
 		for multiple admins"""
@@ -181,7 +180,7 @@ class IRCConnector(object):
 
 		if use_ssl:
 			sock = ssl.wrap_socket(socket(AF_INET, SOCK_STREAM))
-			
+
 		else:
 			sock = socket(AF_INET, SOCK_STREAM)
 
@@ -189,7 +188,7 @@ class IRCConnector(object):
 
 		try:
 			sock.connect((server, int(port)))
-			
+
 		except skt.gaierror:
 			return False
 
@@ -237,19 +236,19 @@ class IRCConnector(object):
 					try:
 						compdata = z.split(" ")[1]
 						errordata = z.split(" ")[0]
-						
+
 					except IndexError:
 						sleep(0.2)
 						continue
-						
+
 					if errordata == "PING":
 						sock.sendall("PONG :{}\r\n".format(" ".join(z.split(":")[1:])))
 						sleep(0.1)
 						continue
-						
+
 					if errordata == "ERROR":
 						return False
-						
+
 					if compdata == str(auth_numeric):
 						return True
 
@@ -282,7 +281,7 @@ class IRCConnector(object):
 		sock.sendall("PASS {0:s}:{1:s}\r\n".format(account_name.encode('utf-8'), password.encode('utf-8')))
 		sock.sendall("PRIVMSG Q@CServe.quakenet.org :AUTH {} {}\r\n".format(account_name.encode('utf-8'), password.encode('utf-8')))
 		sock.sendall("PRIVMSG NickServ IDENTIFY {0:s} {1:s}\r\n".format(account_name.encode('utf-8'), password.encode('utf-8')))
-		
+
 		sleep(3 - executed_time if executed_time < 3 else 3)
 
 		for x in channels:
@@ -325,23 +324,25 @@ class IRCConnector(object):
 			y = []
 
 			while True:
-
 				try:
 					w = x[0].recv(4096).decode('utf-8')
-					
+
 				except error:
 					if len(self.connections[index][2]) > 0:
 						return
-						
+
 					else:
 						sleep(0.1)
 						continue
-						
+
 				except UnicodeDecodeError:
 					return
 
-				if not (w.endswith(u"\n") or w.endswith(u"\r") or
-							w.endswith(u"\r\n")):
+				if not (
+					w.endswith(u"\n") or
+					w.endswith(u"\r") or
+					w.endswith(u"\r\n")
+				):
 					buffering = u"%s%s" % (buffering, w)
 					continue
 
@@ -376,31 +377,51 @@ class IRCConnector(object):
 		Parameters:
 		- index: the index of the OutQueue (abbreviated OQ)"""
 
+		if self.connections[index][2].empty():
+			log(self.logfile, u"No messages to send!")
+			return
+
 		log(self.logfile, u"Sending OQ messages!")
 
 		worked = False
-		
-		try:
-			v = self.connections[index][2].get(False).decode('utf-8')
-			
-			if v == u"":
-				log(self.logfile, u"Error: Blank string in OQ!")
-				return
-				
-			worked = True
-			log(self.logfile, v)
-			self.connections[index][0].sendall(v.encode('utf-8'))
-			sleep(0.8)
 
-		except Empty:
-			if not worked:
-				log(self.logfile, u"No OQ messages sent!")
-				
-			else:
-				log(self.logfile, u"Sent all OQ messages!")
-				sleep(0.4)
-				
-			pass
+		while not self.connections[index][2].empty():
+			try:
+				try:
+					try:
+						v = self.connections[index][2].get_nowait().decode('utf-8')
+
+					except UnicodeDecodeError:
+						v = self.connections[index][2].get_nowait()
+
+				except UnicodeDecodeError:
+					raise Empty
+
+				if v in (u"", ""):
+					log(self.logfile, u"Error: Blank string in OQ!")
+					continue
+
+				worked = True
+
+				try:
+					log(self.logfile, u">> " + v)
+
+				except UnicodeDecodeError:
+					pass
+
+				try:
+					self.connections[index][0].sendall(v.encode('utf-8'))
+
+				except (UnicodeDecodeError, UnicodeEncodeError):
+					self.connections[index][0].sendall(v)
+
+				sleep(0.8)
+
+			except Empty:
+				if worked:
+					sleep(0.4)
+
+		log(self.logfile, u"Sent all OQ messages!")
 
 	def send_command(self, connection_index=0, command=""):
 		"""Sends a command to the IRC server.
@@ -410,7 +431,11 @@ class IRCConnector(object):
 
 		- command: the command string, including \":\" and \"PRIVMSG\" instead
 		of \"MSG\" or \"SAY\". Don't include \"\\r\\n\", it's automatically added!"""
-		self.connections[int(connection_index)][2].put("{0}\r\n".format(command.encode('utf-8')))
+		try:
+			self.connections[int(connection_index)][2].put("{0}\r\n".format(command.encode('utf-8')))
+
+		except UnicodeDecodeError:
+			self.connections[int(connection_index)][2].put("{0}\r\n".format(command))
 
 	def send_message(self,
 					 connection_index=0,
@@ -428,11 +453,10 @@ class IRCConnector(object):
 
 		- message: the message sent to the target. Self-explanatory, I hope."""
 		try:
-			self.connections[connection_index][2].put_nowait(
-				"PRIVMSG {0:s} :{1:s}\r\n".format(target.encode('utf-8'), message.encode('utf-8')))
-				
+			self.send_command(connection_index, "PRIVMSG {0:s} :{1:s}\r\n".format(target.encode('utf-8'), message.encode('utf-8')))
+
 		except UnicodeDecodeError:
-			self.connections[connection_index][2].put_nowait("PRIVMSG {0:s} :{1:s}\r\n".format(target, message))
+			self.send_command(connection_index, "PRIVMSG {0:s} :{1:s}\r\n".format(target, message))
 
 	def disconnect(
 			self,
@@ -445,8 +469,7 @@ class IRCConnector(object):
 		you called add_connection_socket().
 
 		- message: the quit message. Self-explanatory."""
-		self.connections[connection_index][2].put_nowait("QUIT :%s\r\n" %
-														 message.encode('utf-8'))
+		self.send_command(connection_index, ("QUIT :%s\r\n" % message.encode('utf-8')))
 
 	def receive_latest_message(self, index=0):
 		"""Returns the last message from the queue of received messages from
@@ -480,7 +503,7 @@ class IRCConnector(object):
 				if tuple(x[0].getsockname()[:2]) == [address, port]:
 					return self.connections.index(x)
 		return -1
-		
+
 	def receive_all_messages(self, index=0):
 		"""Returns all the messages from the queue in the
 		connection.
@@ -491,11 +514,12 @@ class IRCConnector(object):
 		messages = []
 
 		while True:
+			messages.append(self.receive_latest_message(index))
 
-			try:
-				log(self.logfile, u"Receiving message!")
-				messages.append(self.connections[index][1].get(False))
-			except Empty:
+			if messages[-1] is None:
+				messages = messages[:-1]
 				break
+
+		log(self.logfile, "Received {} messages!".format(len(messages)))
 
 		return tuple(messages)

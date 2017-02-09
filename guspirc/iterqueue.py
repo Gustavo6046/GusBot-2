@@ -2,70 +2,46 @@ from Queue import Queue, Empty
 
 
 class IterableQueue(Queue, object):
-    def __init__(self):
-        super(IterableQueue, self).__init__()
-        self.past_items = []
+	def __init__(self):
+		super(IterableQueue, self).__init__()
+		self.past_items = []
+		
+	def __iter__(self):
+		return self
+		
+	def next(self):
+		x = self.iterate()
+		
+		if x == None:
+			raise StopIteration
+			
+		return x
+		
+	def iterate(self):
+		try:
+			new = self.get_nowait()
+			self.past_items.append(new)
 
-    def __iter__(self):
-        return self
+			return new
+			
+		except Empty:
+			for x in self.past_items:
+				self.put_nowait(x)
+		
+			return None
 
-    def empty(self):
-        try:
-            previous = self.get_nowait()
+	def flush(self):
+		while not self.empty():
+			self.get_nowait()
 
-        except Empty:
-            return True
+	def set_to_iterator(self, iterator=(), flush_before_putting_iterator=False):
+		if flush_before_putting_iterator:
+			self.flush()
 
-        else:
-            self.put_nowait(previous)
-            return False
+		for x in iterator:
+			self.put_nowait(x)
 
-    def flush(self):
-        while not self.empty:
-            self.get_nowait()
+		return self
 
-    def set_to_iterator(self, iterator=(), flush_before_putting_iterator=False):
-        if flush_before_putting_iterator:
-            while not self.empty():
-                self.get_nowait()
-
-        for x in iterator:
-            self.put_nowait(x)
-
-        return self
-
-    def __len__(self):
-
-        if self.empty():
-            return 0
-        else:
-
-            i = 0
-
-            putback = []
-
-            while not self.empty():
-                x = self.get_nowait()
-                putback.append(x)
-                i += 1
-
-            for x in putback:
-                self.put_nowait(x)
-
-            return i
-
-    def next(self):
-        try:
-            x = self.get_nowait()
-        except Empty:
-            return None
-        self.past_items.append(x)
-        try:
-            self.put(self.get())
-        except Empty:
-            self.close()
-        return x
-
-    def close(self, ):
-        for x in self.past_items:
-            self.put(x)
+	def __len__(self):
+		return self.qsize()

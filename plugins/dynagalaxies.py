@@ -589,7 +589,9 @@ def join_dynagalaxies(message, raw):
 	if user in players.keys():	
 		return "You already joined! To quit, use dg_quit."
 	
-	Player(message["nickname"])
+	newplayer = Player(message["nickname"])
+	
+	random.choice(actors["Planet"]).owner = newplayer
 	
 	return "Joined succesfully!"	
 

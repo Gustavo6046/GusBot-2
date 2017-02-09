@@ -27,13 +27,13 @@ def connection(configuration_ini, connector=IRCConnector()):
 				print "Got account name!"
 				authentication_number = configuration.getint("Server{}".format(i), "AuthNumeric".format(i))
 				print "Got auth numeric!"
-				
+
 				try:
 					use_ssl = configuration.getboolean("Server{}".format(i), "UseSSL")
-					
+
 				except NoOptionError:
 					use_ssl = True
-					
+
 				master = configuration.get("General", "Master")
 				has_account = configuration.getboolean("Server{}".format(i), "Authenticated")
 				print "Got condition of authentication!"
@@ -69,10 +69,10 @@ def connection(configuration_ini, connector=IRCConnector()):
 			x.join()
 
 		try:
-			return [connector, configuration.get("General", "CommandPrefix")]
+			return [connector, configuration.get("General", "CommandPrefix"), master]
 
 		except (NoSectionError, NoOptionError):
-			return [connector, ""]
+			return [connector, "", None]
 
 	except NoSectionError:
 		return None
